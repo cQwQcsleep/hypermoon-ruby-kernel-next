@@ -1764,7 +1764,7 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
 				pm.buffer->pme = 0;
 		}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
-		mmap_read_unlock(mm);
+		up_read(&mm->mmap_sem);
 		start_vaddr = end;
 
 		len = min(count, PM_ENTRY_BYTES * pm.pos);
