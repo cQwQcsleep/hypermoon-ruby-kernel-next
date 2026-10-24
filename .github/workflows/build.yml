@@ -1,0 +1,50 @@
+name: build-kernel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo apt-get clean
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison flex cpio libelf-dev zip \
+            clang-17 lld-17 llvm-17 \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
+      - name: Build kernel
+        run: |
+          export LLVM_DIR=/usr/lib/llvm-17
+          export JOBS="$(nproc)"
+          bash scripts/build_kernel.sh
+
+      - name: Package AnyKernel3
+        run: bash scripts/package_anykernel.sh
+
+      - name: Upload kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypermoon-ruby-kernel
+          path: |
+            dist/*.zip
+            out/System.map
+          if-no-files-found: error
