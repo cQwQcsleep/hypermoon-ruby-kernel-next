@@ -18,6 +18,8 @@
 #include "compat/kernel_compat.h"
 #include "uapi/supercall.h"
 #include "supercall/internal.h"
+#include "manager/manager_identity.h"
+#include "policy/allowlist.h"
 #include "arch.h"
 #include "klog.h" // IWYU pragma: keep
 
@@ -99,6 +101,14 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 
     // Check if this is a request to install KSU fd
     if (magic2 == KSU_INSTALL_MAGIC2) {
+        uid_t uid = ksu_get_uid_t(current_uid());
+
+        // Do not hand a driver fd to an unprivileged, unmanaged process.
+        // A forged reboot supercall is otherwise a trivial KernelSU probe.
+        if (uid != 0 && !ksu_is_manager_uid(uid) &&
+            !ksu_is_allow_uid_for_current(uid))
+            return -EINVAL;
+
         ksu_install_fd_to_user((int __user *)*arg);
         return 0;
     }
@@ -112,7 +122,7 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
     // other sys_reboot extensions are fully require uid 0,
     // so let's check it before
     if (ksu_get_uid_t(current_uid()) != 0)
-        return 0;
+        return -EINVAL; // behave like a stock kernel for everyone else
 
 #ifdef CONFIG_KSU_TOOLKIT_SUPPORT
     if (ksu_try_handle_toolkit_cmd(magic2, cmd, arg))

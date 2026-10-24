@@ -40,10 +40,23 @@ Two variants are produced:
   are not exposed. `CONFIG_KALLSYMS_ALL` is turned off to shrink the
   symbol surface of `/proc/kallsyms`, and dmesg is restricted to
   privileged processes.
+- Additional anti-detection hardening aimed at Duck Detector style
+  probes: the reboot supercall only installs the driver fd for root,
+  manager or allowlisted UIDs (a forged call now returns `EINVAL` like a
+  stock kernel); the `init.rc` hook no longer short-circuits on the
+  dentry name and stops doing work for non-`init` readers after boot;
+  `/proc/kallsyms` also drops any symbol containing `ksu`, `kernelsu`,
+  `susfs`, `apatch`, `kpatch`, `supercall` or `magisk`; selinuxfs
+  answers `context` and `access` queries about injected root types
+  (`su`, `ksu_file`, `magisk`, `lsposed_file`, ...) with `EINVAL` for
+  unprivileged callers.
 
 The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
-`639e2e36` and supports KernelSU Official, KOWSU and BakaSU/ReSukiSU
-managers through multi-manager support.
+`639e2e36` (tag `v4.2.0-rc3`, version code `40700`). Manager APK
+signatures accepted by the driver: KernelSU Official (`tiann`), MKSU
+(`5ec1cff`), RKSU (`rsuntk`), SukiSU-Ultra, ReSukiSU and KOWSU
+(`KOWX712`), plus dynamically registered manager signatures. The version
+string shown in the manager is reduced to the bare version code.
 
 ## Build
 
