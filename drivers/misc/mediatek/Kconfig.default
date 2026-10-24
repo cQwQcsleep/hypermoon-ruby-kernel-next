@@ -67,8 +67,8 @@ config ANDROID_DEFAULT_SETTING
 	select HID_PLAYSTATION
 	select HID_SONY
 	select HIGH_RES_TIMERS
-	select IKCONFIG
-	select IKCONFIG_PROC
+	select IKCONFIG if !KSU
+	select IKCONFIG_PROC if !KSU
 	select IKPROC
 	select INET
 	select INET6_ESP
