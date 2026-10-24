@@ -9,6 +9,9 @@ and keeps its device support and boot behaviour. On top of that it updates
 the 4.19 branch to CIP `v4.19.325-cip135` and enables a set of optional
 kernel features.
 
+> HyperMoon keeps the upstream UTS version string spoofed to `5.10.246`
+> for Android compatibility. The source tree is still Linux 4.19.325.
+
 ## What is included
 
 - HyperMoon `main` at `742b01b` as the device/vendor baseline.

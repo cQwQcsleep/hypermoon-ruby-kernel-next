@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
 OUT="${OUT:-$ROOT/out}"
 JOBS="${JOBS:-$(nproc)}"
 LLVM_DIR="${LLVM_DIR:-/usr/lib/llvm-17}"
@@ -34,6 +35,10 @@ if ! command -v arm-linux-gnueabi-gcc >/dev/null 2>&1; then
 	exit 1
 fi
 
+if [ -z "$OUT" ] || [ "$OUT" = "/" ]; then
+	echo "error: refusing to use OUT=$OUT" >&2
+	exit 1
+fi
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
