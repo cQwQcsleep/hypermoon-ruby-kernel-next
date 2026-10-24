@@ -419,11 +419,9 @@ static bool is_init_rc(struct file *fp)
         return false;
     }
 
-    const char *short_name = fp->f_path.dentry->d_name.name;
-    if (strcmp(short_name, "init.rc")) {
-        // we are only interested in the `init.rc` file name.
-        return false;
-    }
+    // Do not short-circuit on the dentry name: probing /proc/self/fd for a
+    // private file named init.rc must cost the same as any other file, and
+    // bind mounts keep the source dentry name anyway.
     char path[256];
     char *dpath = d_path(&fp->f_path, path, sizeof(path));
 
@@ -609,6 +607,11 @@ int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr, size_t *count_pt
 #ifdef CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK
     return 0; // dummy hook here
 #else
+
+    if (ksu_init_rc_hook_inactive())
+        return 0;
+    if (!is_init(current_cred()))
+        return 0;
 
     ksu_handle_sys_read_fd(fd);
 

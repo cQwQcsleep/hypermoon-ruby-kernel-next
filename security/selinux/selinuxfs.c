@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/fs.h>
+#include <linux/cred.h>
 #include <linux/fs_context.h>
 #include <linux/mount.h>
 #include <linux/mutex.h>
@@ -600,6 +601,53 @@ static const struct file_operations sel_load_ops = {
 	.llseek		= generic_file_llseek,
 };
 
+#ifdef CONFIG_KSU_SUSFS
+/*
+ * Probes can ask selinuxfs about the extra types a root solution injects
+ * (su, ksu_file, magisk, ...). Answer unprivileged callers as a stock
+ * kernel would: the type is unknown to the loaded policy.
+ */
+static const char * const susfs_hidden_policy_types[] = {
+	"su", "supersu", "magisk", "ksu_file", "lsposed_file", "riru_file",
+};
+
+static bool susfs_policy_type_is_hidden(const char *type, size_t len)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(susfs_hidden_policy_types); i++) {
+		const char *name = susfs_hidden_policy_types[i];
+
+		if (strlen(name) == len && !memcmp(type, name, len))
+			return true;
+	}
+	return false;
+}
+
+static bool susfs_selinuxfs_request_mentions_hidden(const char *buf,
+						    size_t size)
+{
+	size_t i;
+
+	if (uid_eq(current_uid(), GLOBAL_ROOT_UID))
+		return false;
+
+	for (i = 0; i + 1 < size; i++) {
+		size_t j;
+
+		if (buf[i] != ':')
+			continue;
+		j = i + 1;
+		while (j < size && buf[j] && buf[j] != ':' && buf[j] != ' ' &&
+		       buf[j] != '\n' && buf[j] != '\t')
+			j++;
+		if (susfs_policy_type_is_hidden(buf + i + 1, j - (i + 1)))
+			return true;
+	}
+	return false;
+}
+#endif
+
 static ssize_t sel_write_context(struct file *file, char *buf, size_t size)
 {
 	struct selinux_fs_info *fsi = file_inode(file)->i_sb->s_fs_info;
@@ -613,6 +661,13 @@ static ssize_t sel_write_context(struct file *file, char *buf, size_t size)
 			      SECCLASS_SECURITY, SECURITY__CHECK_CONTEXT, NULL);
 	if (length)
 		goto out;
+
+#ifdef CONFIG_KSU_SUSFS
+	if (susfs_selinuxfs_request_mentions_hidden(buf, size)) {
+		length = -EINVAL;
+		goto out;
+	}
+#endif
 
 	length = security_context_to_sid(state, buf, size, &sid, GFP_KERNEL);
 	if (length)
@@ -835,6 +890,13 @@ static ssize_t sel_write_access(struct file *file, char *buf, size_t size)
 			      SECCLASS_SECURITY, SECURITY__COMPUTE_AV, NULL);
 	if (length)
 		goto out;
+
+#ifdef CONFIG_KSU_SUSFS
+	if (susfs_selinuxfs_request_mentions_hidden(buf, size)) {
+		length = -EINVAL;
+		goto out;
+	}
+#endif
 
 	length = -ENOMEM;
 	scon = kzalloc(size + 1, GFP_KERNEL);
