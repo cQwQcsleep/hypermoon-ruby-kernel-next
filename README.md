@@ -82,10 +82,22 @@ artifacts: `hypermoon-ruby-vanilla` and `hypermoon-ruby-ksu`.
 
 ## Flash
 
+The zips follow the same AnyKernel3 layout and install path as HyperMoon:
+the payload is a plain `Image.gz`, `block=boot`, `is_slot_device=1`,
+ramdisk compression and vbmeta handling are `auto`, so the stock boot dtb
+and the active A/B slot are handled by AnyKernel3 exactly as before.
+
 1. Unlock the bootloader and back up the current boot partition.
 2. Boot a recovery that can flash AnyKernel3 zips.
-3. Flash `dist/hypermoon-ruby-*.zip` to the active slot.
+3. Flash `dist/hypermoon-ruby-*.zip` (no wipes, no extra steps).
 4. Reboot.
+
+Switching between the `vanilla` and `ksu` zips, or changing the KernelSU
+manager, uses the same procedure as HyperMoon: for a clean KSU install,
+back up modules, remove the old manager and `/data/adb/ksu`, then flash.
+
+Every release asset is checked with `unzip -t`, `gzip -t` and a SHA-256
+against the build tree; checksums are published with the release.
 
 The kernel targets HyperOS / MIUI firmware for `ruby`. Flashing a kernel
 always carries risk; keep a known-good boot image available.

@@ -13,13 +13,22 @@ case "$VARIANT" in
 esac
 OUT="${OUT:-$ROOT/out-$VARIANT}"
 DIST="${DIST:-$ROOT/dist}"
-IMAGE="$OUT/arch/arm64/boot/Image.gz-dtb"
-TEMPLATE="${ANY_KERNEL3_DIR:-$ROOT/.cache/AnyKernel3}"
-
-if [ ! -f "$IMAGE" ]; then
-	echo "error: missing $IMAGE (run scripts/build_kernel.sh first)" >&2
+# HyperMoon ships the gzip-only Image.gz and lets AnyKernel3 keep the stock
+# boot dtb, so package the same payload name for an identical flash path.
+IMAGE_GZ="$OUT/arch/arm64/boot/Image.gz"
+IMAGE_DTB="$OUT/arch/arm64/boot/Image.gz-dtb"
+if [ -f "$IMAGE_GZ" ]; then
+	IMAGE="$IMAGE_GZ"
+	PAYLOAD="Image.gz"
+elif [ -f "$IMAGE_DTB" ]; then
+	IMAGE="$IMAGE_DTB"
+	PAYLOAD="Image.gz-dtb"
+else
+	echo "error: missing kernel image in $OUT/arch/arm64/boot" >&2
+	echo "       (expected Image.gz or Image.gz-dtb; run scripts/build_kernel.sh first)" >&2
 	exit 1
 fi
+TEMPLATE="${ANY_KERNEL3_DIR:-$ROOT/.cache/AnyKernel3}"
 
 if [ ! -f "$TEMPLATE/anykernel.sh" ]; then
 	mkdir -p "$(dirname "$TEMPLATE")"
@@ -41,7 +50,7 @@ cp "$ROOT/anykernel.sh" "$WORK/anykernel.sh"
 if [ "$VARIANT" = "ksu" ]; then
 	sed -i 's/kernel.string=.*/kernel.string=HyperMoon Ruby Next (KSU + SUSFS)/' "$WORK/anykernel.sh"
 fi
-cp "$IMAGE" "$WORK/Image.gz-dtb"
+cp "$IMAGE" "$WORK/$PAYLOAD"
 
 VERSION="4.19.325-cip135"
 COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
@@ -51,6 +60,7 @@ if [ "$VARIANT" = "ksu" ]; then
 fi
 ZIP="$DIST/hypermoon-ruby-${VERSION}-${COMMIT}${SUFFIX}.zip"
 
+rm -f "$ZIP"
 (
 	cd "$WORK"
 	zip -r9 "$ZIP" . -x '*placeholder'
