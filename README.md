@@ -11,6 +11,10 @@ kernel features.
 
 > HyperMoon keeps the upstream UTS version string spoofed to `5.10.246`
 > for Android compatibility. The source tree is still Linux 4.19.325.
+> This build strips its own localversion suffixes, so `uname -r` reports
+> exactly `5.10.246` and the version banner no longer carries the tree
+> name, CIP revision, tag count or git commit hash. Build user and host
+> are pinned to `builder@buildhost` so the runner identity is not leaked.
 
 ## What is included
 
@@ -33,7 +37,9 @@ Two variants are produced:
   mount, kstat and mmap hiding, uname spoofing, cmdline spoofing, open
   redirect, KSU/SUSFS symbol hiding and AVC log spoofing. SUSFS logging
   is disabled, and `/proc/config.gz` is removed so the KSU/SUSFS options
-  are not exposed.
+  are not exposed. `CONFIG_KALLSYMS_ALL` is turned off to shrink the
+  symbol surface of `/proc/kallsyms`, and dmesg is restricted to
+  privileged processes.
 
 The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
 `639e2e36` and supports KernelSU Official, KOWSU and BakaSU/ReSukiSU
