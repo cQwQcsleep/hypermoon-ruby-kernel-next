@@ -89,6 +89,10 @@ if [ "$VARIANT" = "ksu" ]; then
 		"$OUT/.config" arch/arm64/configs/vendor/ruby_ksu.config >/dev/null 2>&1
 fi
 make "${MAKE_ARGS[@]}" olddefconfig
+if [ "$VARIANT" = "ksu" ]; then
+	# KSU pulls in SELinux headers that include the generated flask.h.
+	make -j"$JOBS" "${MAKE_ARGS[@]}" security/selinux/
+fi
 make -j"$JOBS" "${MAKE_ARGS[@]}" Image.gz-dtb
 
 echo "kernel: $OUT/arch/arm64/boot/Image.gz-dtb"
