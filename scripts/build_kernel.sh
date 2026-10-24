@@ -90,7 +90,9 @@ if [ "$VARIANT" = "ksu" ]; then
 fi
 make "${MAKE_ARGS[@]}" olddefconfig
 if [ "$VARIANT" = "ksu" ]; then
-	# KSU pulls in SELinux headers that include the generated flask.h.
+	# KSU uses generated UTS/SELinux headers; build their producers first
+	# so parallel clean builds cannot race them.
+	make -j"$JOBS" "${MAKE_ARGS[@]}" init/
 	make -j"$JOBS" "${MAKE_ARGS[@]}" security/selinux/
 fi
 make -j"$JOBS" "${MAKE_ARGS[@]}" Image.gz-dtb
