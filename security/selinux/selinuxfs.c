@@ -43,6 +43,7 @@
 #include "security.h"
 #include "objsec.h"
 #include "conditional.h"
+#include "susfs_policy_filter.h"
 
 enum sel_inos {
 	SEL_ROOT_INO = 2,
@@ -600,53 +601,6 @@ static const struct file_operations sel_load_ops = {
 	.write		= sel_write_load,
 	.llseek		= generic_file_llseek,
 };
-
-#ifdef CONFIG_KSU_SUSFS
-/*
- * Probes can ask selinuxfs about the extra types a root solution injects
- * (su, ksu_file, magisk, ...). Answer unprivileged callers as a stock
- * kernel would: the type is unknown to the loaded policy.
- */
-static const char * const susfs_hidden_policy_types[] = {
-	"su", "supersu", "magisk", "ksu_file", "lsposed_file", "riru_file",
-};
-
-static bool susfs_policy_type_is_hidden(const char *type, size_t len)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(susfs_hidden_policy_types); i++) {
-		const char *name = susfs_hidden_policy_types[i];
-
-		if (strlen(name) == len && !memcmp(type, name, len))
-			return true;
-	}
-	return false;
-}
-
-static bool susfs_selinuxfs_request_mentions_hidden(const char *buf,
-						    size_t size)
-{
-	size_t i;
-
-	if (uid_eq(current_uid(), GLOBAL_ROOT_UID))
-		return false;
-
-	for (i = 0; i + 1 < size; i++) {
-		size_t j;
-
-		if (buf[i] != ':')
-			continue;
-		j = i + 1;
-		while (j < size && buf[j] && buf[j] != ':' && buf[j] != ' ' &&
-		       buf[j] != '\n' && buf[j] != '\t')
-			j++;
-		if (susfs_policy_type_is_hidden(buf + i + 1, j - (i + 1)))
-			return true;
-	}
-	return false;
-}
-#endif
 
 static ssize_t sel_write_context(struct file *file, char *buf, size_t size)
 {

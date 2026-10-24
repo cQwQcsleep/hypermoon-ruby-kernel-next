@@ -94,6 +94,7 @@
 
 #include "avc.h"
 #include "objsec.h"
+#include "susfs_policy_filter.h"
 #include "netif.h"
 #include "netnode.h"
 #include "netport.h"
@@ -6324,6 +6325,11 @@ static int selinux_setprocattr(const char *name, void *value, size_t size)
 
 	/* Obtain a SID for the context, if one was specified. */
 	if (size && str[0] && str[0] != '\n') {
+#ifdef CONFIG_KSU_SUSFS
+		if (!strcmp(name, "current") &&
+		    susfs_selinuxfs_request_mentions_hidden(str, size))
+			return -EINVAL;
+#endif
 		if (str[size-1] == '\n') {
 			str[size-1] = 0;
 			size--;
