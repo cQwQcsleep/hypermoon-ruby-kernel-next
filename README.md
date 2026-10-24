@@ -46,10 +46,10 @@ Two variants are produced:
   stock kernel); the `init.rc` hook no longer short-circuits on the
   dentry name and stops doing work for non-`init` readers after boot;
   `/proc/kallsyms` also drops any symbol containing `ksu`, `kernelsu`,
-  `susfs`, `apatch`, `kpatch`, `supercall` or `magisk`; selinuxfs
-  answers `context` and `access` queries about injected root types
-  (`su`, `ksu_file`, `magisk`, `lsposed_file`, ...) with `EINVAL` for
-  unprivileged callers.
+  `susfs`, `apatch`, `kpatch`, `supercall` or `magisk`; selinuxfs and
+  `/proc/self/attr/current` answer queries about injected root types
+  (`su`, `ksu`, `ksu_file`, `magisk`, `magisk_file`, `lsposed_file`,
+  `xposed_data`, `msd_*`, ...) with `EINVAL` for unprivileged callers.
 
 The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
 `639e2e36` (tag `v4.2.0-rc3`, version code `40700`). Manager APK
