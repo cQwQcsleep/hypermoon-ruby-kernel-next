@@ -684,7 +684,14 @@ static int s_show(struct seq_file *m, void *p)
 			susfs_starts_with(iter->name, "handle_sepolicy") ||
 			susfs_starts_with(iter->name, "getenforce") ||
 			susfs_starts_with(iter->name, "setenforce") ||
-			susfs_starts_with(iter->name, "is_zygote"))
+			susfs_starts_with(iter->name, "is_zygote") ||
+			strstr(iter->name, "ksu") ||
+			strstr(iter->name, "kernelsu") ||
+			strstr(iter->name, "susfs") ||
+			strstr(iter->name, "apatch") ||
+			strstr(iter->name, "kpatch") ||
+			strstr(iter->name, "supercall") ||
+			strstr(iter->name, "magisk"))
 		{
 
 			return 0;
