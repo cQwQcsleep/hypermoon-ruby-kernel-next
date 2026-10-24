@@ -28,7 +28,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 cp -a "$TEMPLATE/." "$WORK/"
-rm -rf "$WORK/.git" "$WORK/README.md"
+rm -rf "$WORK/.git" "$WORK/.github" "$WORK/README.md"
 cp "$ROOT/anykernel.sh" "$WORK/anykernel.sh"
 cp "$IMAGE" "$WORK/Image.gz-dtb"
 
