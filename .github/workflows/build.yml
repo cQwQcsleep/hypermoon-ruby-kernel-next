@@ -13,6 +13,11 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [vanilla, ksu]
+    name: build-${{ matrix.variant }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,24 +32,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            bc bison flex cpio libelf-dev zip \
+            bc bison flex cpio libelf-dev libssl-dev zip \
             clang-17 lld-17 llvm-17 \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
-      - name: Build kernel
+      - name: Build kernel (${{ matrix.variant }})
         run: |
           export LLVM_DIR=/usr/lib/llvm-17
           export JOBS="$(nproc)"
-          bash scripts/build_kernel.sh
+          bash scripts/build_kernel.sh "${{ matrix.variant }}"
 
-      - name: Package AnyKernel3
-        run: bash scripts/package_anykernel.sh
+      - name: Package AnyKernel3 (${{ matrix.variant }})
+        run: bash scripts/package_anykernel.sh "${{ matrix.variant }}"
 
-      - name: Upload kernel
+      - name: Upload kernel (${{ matrix.variant }})
         uses: actions/upload-artifact@v4
         with:
-          name: hypermoon-ruby-kernel
+          name: hypermoon-ruby-${{ matrix.variant }}
           path: |
             dist/*.zip
-            out/System.map
+            out-${{ matrix.variant }}/System.map
           if-no-files-found: error
