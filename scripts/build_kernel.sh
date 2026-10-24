@@ -19,6 +19,11 @@ JOBS="${JOBS:-$(nproc)}"
 LLVM_DIR="${LLVM_DIR:-/usr/lib/llvm-17}"
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
 
+# Do not embed the build machine/user name in the kernel version banner
+KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-builder}"
+KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-buildhost}"
+export KBUILD_BUILD_USER KBUILD_BUILD_HOST
+
 CC="${CC:-$LLVM_DIR/bin/clang}"
 LD="${LD:-$LLVM_DIR/bin/ld.lld}"
 AR="${AR:-$LLVM_DIR/bin/llvm-ar}"
@@ -79,6 +84,8 @@ MAKE_ARGS=(
 	OBJSIZE="$OBJSIZE"
 	STRIP="$STRIP"
 	CROSS_COMPILE="$CROSS_COMPILE"
+	KBUILD_BUILD_USER="$KBUILD_BUILD_USER"
+	KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST"
 )
 
 make "${MAKE_ARGS[@]}" ruby_defconfig
