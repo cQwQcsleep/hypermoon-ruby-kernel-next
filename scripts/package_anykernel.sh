@@ -3,7 +3,15 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT="${OUT:-$ROOT/out}"
+VARIANT="${1:-${VARIANT:-vanilla}}"
+case "$VARIANT" in
+	vanilla|ksu) ;;
+	*)
+		echo "error: unknown variant '$VARIANT' (use vanilla or ksu)" >&2
+		exit 1
+		;;
+esac
+OUT="${OUT:-$ROOT/out-$VARIANT}"
 DIST="${DIST:-$ROOT/dist}"
 IMAGE="$OUT/arch/arm64/boot/Image.gz-dtb"
 TEMPLATE="${ANY_KERNEL3_DIR:-$ROOT/.cache/AnyKernel3}"
@@ -30,11 +38,18 @@ trap 'rm -rf "$WORK"' EXIT
 cp -a "$TEMPLATE/." "$WORK/"
 rm -rf "$WORK/.git" "$WORK/.github" "$WORK/README.md"
 cp "$ROOT/anykernel.sh" "$WORK/anykernel.sh"
+if [ "$VARIANT" = "ksu" ]; then
+	sed -i 's/kernel.string=.*/kernel.string=HyperMoon Ruby Next (KSU + SUSFS)/' "$WORK/anykernel.sh"
+fi
 cp "$IMAGE" "$WORK/Image.gz-dtb"
 
 VERSION="4.19.325-cip135"
 COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-ZIP="$DIST/hypermoon-ruby-${VERSION}-${COMMIT}.zip"
+SUFFIX=""
+if [ "$VARIANT" = "ksu" ]; then
+	SUFFIX="-ksu"
+fi
+ZIP="$DIST/hypermoon-ruby-${VERSION}-${COMMIT}${SUFFIX}.zip"
 
 (
 	cd "$WORK"

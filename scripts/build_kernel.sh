@@ -4,7 +4,17 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-OUT="${OUT:-$ROOT/out}"
+
+VARIANT="${1:-${VARIANT:-vanilla}}"
+case "$VARIANT" in
+	vanilla|ksu) ;;
+	*)
+		echo "error: unknown variant '$VARIANT' (use vanilla or ksu)" >&2
+		exit 1
+		;;
+esac
+
+OUT="${OUT:-$ROOT/out-$VARIANT}"
 JOBS="${JOBS:-$(nproc)}"
 LLVM_DIR="${LLVM_DIR:-/usr/lib/llvm-17}"
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
@@ -73,7 +83,11 @@ MAKE_ARGS=(
 
 make "${MAKE_ARGS[@]}" ruby_defconfig
 scripts/kconfig/merge_config.sh -m -O "$OUT" \
-	"$OUT/.config" arch/arm64/configs/vendor/ruby_features.config
+	"$OUT/.config" arch/arm64/configs/vendor/ruby_features.config >/dev/null 2>&1
+if [ "$VARIANT" = "ksu" ]; then
+	scripts/kconfig/merge_config.sh -m -O "$OUT" \
+		"$OUT/.config" arch/arm64/configs/vendor/ruby_ksu.config >/dev/null 2>&1
+fi
 make "${MAKE_ARGS[@]}" olddefconfig
 make -j"$JOBS" "${MAKE_ARGS[@]}" Image.gz-dtb
 

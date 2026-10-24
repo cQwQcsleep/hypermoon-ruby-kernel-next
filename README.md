@@ -25,8 +25,17 @@ kernel features.
 - Existing HyperMoon features retained: EROFS, exFAT, WireGuard, PSI,
   uclamp, MTK scheduler extensions and the MediaTek/Xiaomi drivers.
 
-KernelSU/SUSFS hooks are present in the source, but this build does not
-bundle a KernelSU driver. The image is a vanilla kernel.
+Two variants are produced:
+
+- `vanilla` - the kernel above without a root driver.
+- `ksu` - the same kernel with a built-in ReSukiSU/BakaSU driver and
+  SUSFS `v2.1.0` inline hooks. Enabled hiding features: suspicious path,
+  mount, kstat and mmap hiding, uname spoofing, cmdline spoofing, open
+  redirect and KSU/SUSFS symbol hiding. SUSFS logging is disabled.
+
+The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
+`639e2e36` and supports KernelSU Official, KOWSU and BakaSU/ReSukiSU
+managers through multi-manager support.
 
 ## Build
 
@@ -34,17 +43,21 @@ Requirements: Ubuntu 24.04 (or equivalent), LLVM/Clang 17, AArch64 GNU
 binutils and the ARM 32-bit cross compiler for the compat vDSO.
 
 ```sh
-sudo apt-get install -y bc bison flex cpio libelf-dev zip \
+sudo apt-get install -y bc bison flex cpio libelf-dev libssl-dev zip \
   clang-17 lld-17 llvm-17 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
-LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh
-bash scripts/package_anykernel.sh
+
+LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh vanilla
+bash scripts/package_anykernel.sh vanilla
+
+LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh ksu
+bash scripts/package_anykernel.sh ksu
 ```
 
-The output kernel is `out/arch/arm64/boot/Image.gz-dtb`; the flashable
-AnyKernel3 zip is written to `dist/`.
+Kernels are written to `out-vanilla/` and `out-ksu/`; flashable AnyKernel3
+zips are written to `dist/`.
 
-GitHub Actions runs the same build on every push and uploads the zip as an
-artifact.
+GitHub Actions builds both variants on every push and uploads two
+artifacts: `hypermoon-ruby-vanilla` and `hypermoon-ruby-ksu`.
 
 ## Flash
 
