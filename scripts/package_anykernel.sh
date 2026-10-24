@@ -32,7 +32,7 @@ rm -rf "$WORK/.git" "$WORK/README.md"
 cp "$ROOT/anykernel.sh" "$WORK/anykernel.sh"
 cp "$IMAGE" "$WORK/Image.gz-dtb"
 
-VERSION="$(make -s -C "$ROOT" kernelversion 2>/dev/null || echo 4.19)"
+VERSION="4.19.325-cip135"
 COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 ZIP="$DIST/hypermoon-ruby-${VERSION}-${COMMIT}.zip"
 
