@@ -233,8 +233,8 @@ bool susfs_is_inode_sus_path(struct inode *inode)
 
 /* sus_mount */
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-// - Default to false now so zygisk can pick up the sus mounts without the need to turn it off manually in post-fs-data stage
-//   otherwise user needs to turn it on in post-fs-data stage and turn it off in boot-completed stage
+// Zygisk needs to see SUSFS mounts during post-fs-data, so keep this off by
+// default. Userspace can enable it after boot via the SUSFS supercall.
 bool susfs_hide_sus_mnts_for_non_su_procs = false;
 
 void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info) {
@@ -1458,7 +1458,7 @@ void susfs_init(void) {
 	static_branch_enable(&ksu_input_hook_key_false);
 	static_branch_enable(&susfs_set_sdcard_android_data_decrypted_key_false);
 	static_branch_disable(&susfs_set_uname_key_true);
-	static_branch_disable(&susfs_avc_log_spoofing_key_true);
+	static_branch_enable(&susfs_avc_log_spoofing_key_true);
 	static_branch_disable(&susfs_set_fake_cmdline_or_bootconfig_key_true);
 	SUSFS_LOGI("susfs is initialized! version: " SUSFS_VERSION " \n");
 }

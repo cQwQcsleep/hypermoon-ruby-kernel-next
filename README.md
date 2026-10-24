@@ -31,7 +31,9 @@ Two variants are produced:
 - `ksu` - the same kernel with a built-in ReSukiSU/BakaSU driver and
   SUSFS `v2.1.0` inline hooks. Enabled hiding features: suspicious path,
   mount, kstat and mmap hiding, uname spoofing, cmdline spoofing, open
-  redirect and KSU/SUSFS symbol hiding. SUSFS logging is disabled.
+  redirect, KSU/SUSFS symbol hiding and AVC log spoofing. SUSFS logging
+  is disabled, and `/proc/config.gz` is removed so the KSU/SUSFS options
+  are not exposed.
 
 The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
 `639e2e36` and supports KernelSU Official, KOWSU and BakaSU/ReSukiSU
