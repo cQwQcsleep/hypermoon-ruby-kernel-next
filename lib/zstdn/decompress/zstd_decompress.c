@@ -59,7 +59,7 @@
 #include "../common/fse.h"
 #define HUFn_STATIC_LINKING_ONLY
 #include "../common/huf.h"
-#include "include/xxhash.h" /* xxh64_reset, xxh64_update, xxh64_digest, XXHn64 */
+#include "include/xxhash.h" /* xxhn64_reset, xxhn64_update, xxhn64_digest, XXHn64 */
 #include "../common/zstd_internal.h"  /* blockProperties_t */
 #include "zstd_decompress_internal.h"   /* ZSTDn_DCtx */
 #include "zstd_ddict.h"  /* ZSTDn_DDictDictContent */
@@ -86,7 +86,7 @@
  * Returns an index between [0, hashSet->ddictPtrTableSize]
  */
 static size_t ZSTDn_DDictHashSet_getIndex(const ZSTDn_DDictHashSet* hashSet, U32 dictID) {
-    const U64 hash = xxh64(&dictID, sizeof(U32), 0);
+    const U64 hash = xxhn64(&dictID, sizeof(U32), 0);
     /* DDict ptr table size is a multiple of 2, use size - 1 as mask to get index within [0, hashSet->ddictPtrTableSize) */
     return hash & (hashSet->ddictPtrTableSize - 1);
 }
@@ -617,7 +617,7 @@ static size_t ZSTDn_decodeFrameHeader(ZSTDn_DCtx* dctx, const void* src, size_t 
                     dictionary_wrong, "");
 #endif
     dctx->validateChecksum = (dctx->fParams.checksumFlag && !dctx->forceIgnoreChecksum) ? 1 : 0;
-    if (dctx->validateChecksum) xxh64_reset(&dctx->xxhState, 0);
+    if (dctx->validateChecksum) xxhn64_reset(&dctx->xxhnState, 0);
     dctx->processedCSize += headerSize;
     return 0;
 }
@@ -839,7 +839,7 @@ static size_t ZSTDn_decompressFrame(ZSTDn_DCtx* dctx,
 
         if (ZSTDn_isError(decodedSize)) return decodedSize;
         if (dctx->validateChecksum)
-            xxh64_update(&dctx->xxhState, op, decodedSize);
+            xxhn64_update(&dctx->xxhnState, op, decodedSize);
         if (decodedSize != 0)
             op += decodedSize;
         assert(ip != NULL);
@@ -855,7 +855,7 @@ static size_t ZSTDn_decompressFrame(ZSTDn_DCtx* dctx,
     if (dctx->fParams.checksumFlag) { /* Frame content checksum verification */
         RETURN_ERROR_IF(remainingSrcSize<4, checksum_wrong, "");
         if (!dctx->forceIgnoreChecksum) {
-            U32 const checkCalc = (U32)xxh64_digest(&dctx->xxhState);
+            U32 const checkCalc = (U32)xxhn64_digest(&dctx->xxhnState);
             U32 checkRead;
             checkRead = MEMn_readLE32(ip);
             RETURN_ERROR_IF(checkRead != checkCalc, checksum_wrong, "");
@@ -1138,7 +1138,7 @@ size_t ZSTDn_decompressContinue(ZSTDn_DCtx* dctx, void* dst, size_t dstCapacity,
             RETURN_ERROR_IF(rSize > dctx->fParams.blockSizeMax, corruption_detected, "Decompressed Block Size Exceeds Maximum");
             DEBUGLOG(5, "ZSTDn_decompressContinue: decoded size from block : %u", (unsigned)rSize);
             dctx->decodedSize += rSize;
-            if (dctx->validateChecksum) xxh64_update(&dctx->xxhState, dst, rSize);
+            if (dctx->validateChecksum) xxhn64_update(&dctx->xxhnState, dst, rSize);
             dctx->previousDstEnd = (char*)dst + rSize;
 
             /* Stay on the same stage until we are finished streaming the block. */
@@ -1171,7 +1171,7 @@ size_t ZSTDn_decompressContinue(ZSTDn_DCtx* dctx, void* dst, size_t dstCapacity,
         assert(srcSize == 4);  /* guaranteed by dctx->expected */
         {
             if (dctx->validateChecksum) {
-                U32 const h32 = (U32)xxh64_digest(&dctx->xxhState);
+                U32 const h32 = (U32)xxhn64_digest(&dctx->xxhnState);
                 U32 const check32 = MEMn_readLE32(src);
                 DEBUGLOG(4, "ZSTDn_decompressContinue: checksum : calculated %08X :: %08X read", (unsigned)h32, (unsigned)check32);
                 RETURN_ERROR_IF(check32 != h32, checksum_wrong, "");

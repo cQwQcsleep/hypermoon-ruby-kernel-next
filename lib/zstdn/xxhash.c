@@ -49,8 +49,8 @@
 /*-*************************************
  * Macros
  **************************************/
-#define xxh_rotl32(x, r) ((x << r) | (x >> (32 - r)))
-#define xxh_rotl64(x, r) ((x << r) | (x >> (64 - r)))
+#define xxhn_rotl32(x, r) ((x << r) | (x >> (32 - r)))
+#define xxhn_rotl64(x, r) ((x << r) | (x >> (64 - r)))
 
 #ifdef __LITTLE_ENDIAN
 # define XXHn_CPU_LITTLE_ENDIAN 1
@@ -76,12 +76,12 @@ static const uint64_t PRIME64_5 =  2870177450012600261ULL;
 /*-**************************
  *  Utils
  ***************************/
-void xxh32_copy_state(struct xxh32_state *dst, const struct xxh32_state *src)
+void xxhn32_copy_state(struct xxhn32_state *dst, const struct xxhn32_state *src)
 {
 	memcpy(dst, src, sizeof(*dst));
 }
 
-void xxh64_copy_state(struct xxh64_state *dst, const struct xxh64_state *src)
+void xxhn64_copy_state(struct xxhn64_state *dst, const struct xxhn64_state *src)
 {
 	memcpy(dst, src, sizeof(*dst));
 }
@@ -89,15 +89,15 @@ void xxh64_copy_state(struct xxh64_state *dst, const struct xxh64_state *src)
 /*-***************************
  * Simple Hash Functions
  ****************************/
-static uint32_t xxh32_round(uint32_t seed, const uint32_t input)
+static uint32_t xxhn32_round(uint32_t seed, const uint32_t input)
 {
 	seed += input * PRIME32_2;
-	seed = xxh_rotl32(seed, 13);
+	seed = xxhn_rotl32(seed, 13);
 	seed *= PRIME32_1;
 	return seed;
 }
 
-uint32_t xxh32(const void *input, const size_t len, const uint32_t seed)
+uint32_t xxhn32(const void *input, const size_t len, const uint32_t seed)
 {
 	const uint8_t *p = (const uint8_t *)input;
 	const uint8_t *b_end = p + len;
@@ -111,18 +111,18 @@ uint32_t xxh32(const void *input, const size_t len, const uint32_t seed)
 		uint32_t v4 = seed - PRIME32_1;
 
 		do {
-			v1 = xxh32_round(v1, get_unaligned_le32(p));
+			v1 = xxhn32_round(v1, get_unaligned_le32(p));
 			p += 4;
-			v2 = xxh32_round(v2, get_unaligned_le32(p));
+			v2 = xxhn32_round(v2, get_unaligned_le32(p));
 			p += 4;
-			v3 = xxh32_round(v3, get_unaligned_le32(p));
+			v3 = xxhn32_round(v3, get_unaligned_le32(p));
 			p += 4;
-			v4 = xxh32_round(v4, get_unaligned_le32(p));
+			v4 = xxhn32_round(v4, get_unaligned_le32(p));
 			p += 4;
 		} while (p <= limit);
 
-		h32 = xxh_rotl32(v1, 1) + xxh_rotl32(v2, 7) +
-			xxh_rotl32(v3, 12) + xxh_rotl32(v4, 18);
+		h32 = xxhn_rotl32(v1, 1) + xxhn_rotl32(v2, 7) +
+			xxhn_rotl32(v3, 12) + xxhn_rotl32(v4, 18);
 	} else {
 		h32 = seed + PRIME32_5;
 	}
@@ -131,13 +131,13 @@ uint32_t xxh32(const void *input, const size_t len, const uint32_t seed)
 
 	while (p + 4 <= b_end) {
 		h32 += get_unaligned_le32(p) * PRIME32_3;
-		h32 = xxh_rotl32(h32, 17) * PRIME32_4;
+		h32 = xxhn_rotl32(h32, 17) * PRIME32_4;
 		p += 4;
 	}
 
 	while (p < b_end) {
 		h32 += (*p) * PRIME32_5;
-		h32 = xxh_rotl32(h32, 11) * PRIME32_1;
+		h32 = xxhn_rotl32(h32, 11) * PRIME32_1;
 		p++;
 	}
 
@@ -150,23 +150,23 @@ uint32_t xxh32(const void *input, const size_t len, const uint32_t seed)
 	return h32;
 }
 
-static uint64_t xxh64_round(uint64_t acc, const uint64_t input)
+static uint64_t xxhn64_round(uint64_t acc, const uint64_t input)
 {
 	acc += input * PRIME64_2;
-	acc = xxh_rotl64(acc, 31);
+	acc = xxhn_rotl64(acc, 31);
 	acc *= PRIME64_1;
 	return acc;
 }
 
-static uint64_t xxh64_merge_round(uint64_t acc, uint64_t val)
+static uint64_t xxhn64_merge_round(uint64_t acc, uint64_t val)
 {
-	val = xxh64_round(0, val);
+	val = xxhn64_round(0, val);
 	acc ^= val;
 	acc = acc * PRIME64_1 + PRIME64_4;
 	return acc;
 }
 
-uint64_t xxh64(const void *input, const size_t len, const uint64_t seed)
+uint64_t xxhn64(const void *input, const size_t len, const uint64_t seed)
 {
 	const uint8_t *p = (const uint8_t *)input;
 	const uint8_t *const b_end = p + len;
@@ -180,22 +180,22 @@ uint64_t xxh64(const void *input, const size_t len, const uint64_t seed)
 		uint64_t v4 = seed - PRIME64_1;
 
 		do {
-			v1 = xxh64_round(v1, get_unaligned_le64(p));
+			v1 = xxhn64_round(v1, get_unaligned_le64(p));
 			p += 8;
-			v2 = xxh64_round(v2, get_unaligned_le64(p));
+			v2 = xxhn64_round(v2, get_unaligned_le64(p));
 			p += 8;
-			v3 = xxh64_round(v3, get_unaligned_le64(p));
+			v3 = xxhn64_round(v3, get_unaligned_le64(p));
 			p += 8;
-			v4 = xxh64_round(v4, get_unaligned_le64(p));
+			v4 = xxhn64_round(v4, get_unaligned_le64(p));
 			p += 8;
 		} while (p <= limit);
 
-		h64 = xxh_rotl64(v1, 1) + xxh_rotl64(v2, 7) +
-			xxh_rotl64(v3, 12) + xxh_rotl64(v4, 18);
-		h64 = xxh64_merge_round(h64, v1);
-		h64 = xxh64_merge_round(h64, v2);
-		h64 = xxh64_merge_round(h64, v3);
-		h64 = xxh64_merge_round(h64, v4);
+		h64 = xxhn_rotl64(v1, 1) + xxhn_rotl64(v2, 7) +
+			xxhn_rotl64(v3, 12) + xxhn_rotl64(v4, 18);
+		h64 = xxhn64_merge_round(h64, v1);
+		h64 = xxhn64_merge_round(h64, v2);
+		h64 = xxhn64_merge_round(h64, v3);
+		h64 = xxhn64_merge_round(h64, v4);
 
 	} else {
 		h64  = seed + PRIME64_5;
@@ -204,22 +204,22 @@ uint64_t xxh64(const void *input, const size_t len, const uint64_t seed)
 	h64 += (uint64_t)len;
 
 	while (p + 8 <= b_end) {
-		const uint64_t k1 = xxh64_round(0, get_unaligned_le64(p));
+		const uint64_t k1 = xxhn64_round(0, get_unaligned_le64(p));
 
 		h64 ^= k1;
-		h64 = xxh_rotl64(h64, 27) * PRIME64_1 + PRIME64_4;
+		h64 = xxhn_rotl64(h64, 27) * PRIME64_1 + PRIME64_4;
 		p += 8;
 	}
 
 	if (p + 4 <= b_end) {
 		h64 ^= (uint64_t)(get_unaligned_le32(p)) * PRIME64_1;
-		h64 = xxh_rotl64(h64, 23) * PRIME64_2 + PRIME64_3;
+		h64 = xxhn_rotl64(h64, 23) * PRIME64_2 + PRIME64_3;
 		p += 4;
 	}
 
 	while (p < b_end) {
 		h64 ^= (*p) * PRIME64_5;
-		h64 = xxh_rotl64(h64, 11) * PRIME64_1;
+		h64 = xxhn_rotl64(h64, 11) * PRIME64_1;
 		p++;
 	}
 
@@ -235,10 +235,10 @@ uint64_t xxh64(const void *input, const size_t len, const uint64_t seed)
 /*-**************************************************
  * Advanced Hash Functions
  ***************************************************/
-void xxh32_reset(struct xxh32_state *statePtr, const uint32_t seed)
+void xxhn32_reset(struct xxhn32_state *statePtr, const uint32_t seed)
 {
 	/* use a local state for memcpy() to avoid strict-aliasing warnings */
-	struct xxh32_state state;
+	struct xxhn32_state state;
 
 	memset(&state, 0, sizeof(state));
 	state.v1 = seed + PRIME32_1 + PRIME32_2;
@@ -248,10 +248,10 @@ void xxh32_reset(struct xxh32_state *statePtr, const uint32_t seed)
 	memcpy(statePtr, &state, sizeof(state));
 }
 
-void xxh64_reset(struct xxh64_state *statePtr, const uint64_t seed)
+void xxhn64_reset(struct xxhn64_state *statePtr, const uint64_t seed)
 {
 	/* use a local state for memcpy() to avoid strict-aliasing warnings */
-	struct xxh64_state state;
+	struct xxhn64_state state;
 
 	memset(&state, 0, sizeof(state));
 	state.v1 = seed + PRIME64_1 + PRIME64_2;
@@ -261,7 +261,7 @@ void xxh64_reset(struct xxh64_state *statePtr, const uint64_t seed)
 	memcpy(statePtr, &state, sizeof(state));
 }
 
-int xxh32_update(struct xxh32_state *state, const void *input, const size_t len)
+int xxhn32_update(struct xxhn32_state *state, const void *input, const size_t len)
 {
 	const uint8_t *p = (const uint8_t *)input;
 	const uint8_t *const b_end = p + len;
@@ -284,13 +284,13 @@ int xxh32_update(struct xxh32_state *state, const void *input, const size_t len)
 		memcpy((uint8_t *)(state->mem32) + state->memsize, input,
 			16 - state->memsize);
 
-		state->v1 = xxh32_round(state->v1, get_unaligned_le32(p32));
+		state->v1 = xxhn32_round(state->v1, get_unaligned_le32(p32));
 		p32++;
-		state->v2 = xxh32_round(state->v2, get_unaligned_le32(p32));
+		state->v2 = xxhn32_round(state->v2, get_unaligned_le32(p32));
 		p32++;
-		state->v3 = xxh32_round(state->v3, get_unaligned_le32(p32));
+		state->v3 = xxhn32_round(state->v3, get_unaligned_le32(p32));
 		p32++;
-		state->v4 = xxh32_round(state->v4, get_unaligned_le32(p32));
+		state->v4 = xxhn32_round(state->v4, get_unaligned_le32(p32));
 		p32++;
 
 		p += 16-state->memsize;
@@ -305,13 +305,13 @@ int xxh32_update(struct xxh32_state *state, const void *input, const size_t len)
 		uint32_t v4 = state->v4;
 
 		do {
-			v1 = xxh32_round(v1, get_unaligned_le32(p));
+			v1 = xxhn32_round(v1, get_unaligned_le32(p));
 			p += 4;
-			v2 = xxh32_round(v2, get_unaligned_le32(p));
+			v2 = xxhn32_round(v2, get_unaligned_le32(p));
 			p += 4;
-			v3 = xxh32_round(v3, get_unaligned_le32(p));
+			v3 = xxhn32_round(v3, get_unaligned_le32(p));
 			p += 4;
-			v4 = xxh32_round(v4, get_unaligned_le32(p));
+			v4 = xxhn32_round(v4, get_unaligned_le32(p));
 			p += 4;
 		} while (p <= limit);
 
@@ -329,7 +329,7 @@ int xxh32_update(struct xxh32_state *state, const void *input, const size_t len)
 	return 0;
 }
 
-uint32_t xxh32_digest(const struct xxh32_state *state)
+uint32_t xxhn32_digest(const struct xxhn32_state *state)
 {
 	const uint8_t *p = (const uint8_t *)state->mem32;
 	const uint8_t *const b_end = (const uint8_t *)(state->mem32) +
@@ -337,8 +337,8 @@ uint32_t xxh32_digest(const struct xxh32_state *state)
 	uint32_t h32;
 
 	if (state->large_len) {
-		h32 = xxh_rotl32(state->v1, 1) + xxh_rotl32(state->v2, 7) +
-			xxh_rotl32(state->v3, 12) + xxh_rotl32(state->v4, 18);
+		h32 = xxhn_rotl32(state->v1, 1) + xxhn_rotl32(state->v2, 7) +
+			xxhn_rotl32(state->v3, 12) + xxhn_rotl32(state->v4, 18);
 	} else {
 		h32 = state->v3 /* == seed */ + PRIME32_5;
 	}
@@ -347,13 +347,13 @@ uint32_t xxh32_digest(const struct xxh32_state *state)
 
 	while (p + 4 <= b_end) {
 		h32 += get_unaligned_le32(p) * PRIME32_3;
-		h32 = xxh_rotl32(h32, 17) * PRIME32_4;
+		h32 = xxhn_rotl32(h32, 17) * PRIME32_4;
 		p += 4;
 	}
 
 	while (p < b_end) {
 		h32 += (*p) * PRIME32_5;
-		h32 = xxh_rotl32(h32, 11) * PRIME32_1;
+		h32 = xxhn_rotl32(h32, 11) * PRIME32_1;
 		p++;
 	}
 
@@ -366,7 +366,7 @@ uint32_t xxh32_digest(const struct xxh32_state *state)
 	return h32;
 }
 
-int xxh64_update(struct xxh64_state *state, const void *input, const size_t len)
+int xxhn64_update(struct xxhn64_state *state, const void *input, const size_t len)
 {
 	const uint8_t *p = (const uint8_t *)input;
 	const uint8_t *const b_end = p + len;
@@ -388,13 +388,13 @@ int xxh64_update(struct xxh64_state *state, const void *input, const size_t len)
 		memcpy(((uint8_t *)p64) + state->memsize, input,
 			32 - state->memsize);
 
-		state->v1 = xxh64_round(state->v1, get_unaligned_le64(p64));
+		state->v1 = xxhn64_round(state->v1, get_unaligned_le64(p64));
 		p64++;
-		state->v2 = xxh64_round(state->v2, get_unaligned_le64(p64));
+		state->v2 = xxhn64_round(state->v2, get_unaligned_le64(p64));
 		p64++;
-		state->v3 = xxh64_round(state->v3, get_unaligned_le64(p64));
+		state->v3 = xxhn64_round(state->v3, get_unaligned_le64(p64));
 		p64++;
-		state->v4 = xxh64_round(state->v4, get_unaligned_le64(p64));
+		state->v4 = xxhn64_round(state->v4, get_unaligned_le64(p64));
 
 		p += 32 - state->memsize;
 		state->memsize = 0;
@@ -408,13 +408,13 @@ int xxh64_update(struct xxh64_state *state, const void *input, const size_t len)
 		uint64_t v4 = state->v4;
 
 		do {
-			v1 = xxh64_round(v1, get_unaligned_le64(p));
+			v1 = xxhn64_round(v1, get_unaligned_le64(p));
 			p += 8;
-			v2 = xxh64_round(v2, get_unaligned_le64(p));
+			v2 = xxhn64_round(v2, get_unaligned_le64(p));
 			p += 8;
-			v3 = xxh64_round(v3, get_unaligned_le64(p));
+			v3 = xxhn64_round(v3, get_unaligned_le64(p));
 			p += 8;
-			v4 = xxh64_round(v4, get_unaligned_le64(p));
+			v4 = xxhn64_round(v4, get_unaligned_le64(p));
 			p += 8;
 		} while (p <= limit);
 
@@ -432,7 +432,7 @@ int xxh64_update(struct xxh64_state *state, const void *input, const size_t len)
 	return 0;
 }
 
-uint64_t xxh64_digest(const struct xxh64_state *state)
+uint64_t xxhn64_digest(const struct xxhn64_state *state)
 {
 	const uint8_t *p = (const uint8_t *)state->mem64;
 	const uint8_t *const b_end = (const uint8_t *)state->mem64 +
@@ -445,12 +445,12 @@ uint64_t xxh64_digest(const struct xxh64_state *state)
 		const uint64_t v3 = state->v3;
 		const uint64_t v4 = state->v4;
 
-		h64 = xxh_rotl64(v1, 1) + xxh_rotl64(v2, 7) +
-			xxh_rotl64(v3, 12) + xxh_rotl64(v4, 18);
-		h64 = xxh64_merge_round(h64, v1);
-		h64 = xxh64_merge_round(h64, v2);
-		h64 = xxh64_merge_round(h64, v3);
-		h64 = xxh64_merge_round(h64, v4);
+		h64 = xxhn_rotl64(v1, 1) + xxhn_rotl64(v2, 7) +
+			xxhn_rotl64(v3, 12) + xxhn_rotl64(v4, 18);
+		h64 = xxhn64_merge_round(h64, v1);
+		h64 = xxhn64_merge_round(h64, v2);
+		h64 = xxhn64_merge_round(h64, v3);
+		h64 = xxhn64_merge_round(h64, v4);
 	} else {
 		h64  = state->v3 + PRIME64_5;
 	}
@@ -458,22 +458,22 @@ uint64_t xxh64_digest(const struct xxh64_state *state)
 	h64 += (uint64_t)state->total_len;
 
 	while (p + 8 <= b_end) {
-		const uint64_t k1 = xxh64_round(0, get_unaligned_le64(p));
+		const uint64_t k1 = xxhn64_round(0, get_unaligned_le64(p));
 
 		h64 ^= k1;
-		h64 = xxh_rotl64(h64, 27) * PRIME64_1 + PRIME64_4;
+		h64 = xxhn_rotl64(h64, 27) * PRIME64_1 + PRIME64_4;
 		p += 8;
 	}
 
 	if (p + 4 <= b_end) {
 		h64 ^= (uint64_t)(get_unaligned_le32(p)) * PRIME64_1;
-		h64 = xxh_rotl64(h64, 23) * PRIME64_2 + PRIME64_3;
+		h64 = xxhn_rotl64(h64, 23) * PRIME64_2 + PRIME64_3;
 		p += 4;
 	}
 
 	while (p < b_end) {
 		h64 ^= (*p) * PRIME64_5;
-		h64 = xxh_rotl64(h64, 11) * PRIME64_1;
+		h64 = xxhn_rotl64(h64, 11) * PRIME64_1;
 		p++;
 	}
 

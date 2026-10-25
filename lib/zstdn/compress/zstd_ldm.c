@@ -262,12 +262,12 @@ void ZSTDn_ldm_fillHashTable(
         for (n = 0; n < numSplits; n++) {
             if (ip + splits[n] >= istart + minMatchLength) {
                 BYTE const* const split = ip + splits[n] - minMatchLength;
-                U64 const xxhash = xxh64(split, minMatchLength, 0);
-                U32 const hash = (U32)(xxhash & (((U32)1 << hBits) - 1));
+                U64 const xxhnash = xxhn64(split, minMatchLength, 0);
+                U32 const hash = (U32)(xxhnash & (((U32)1 << hBits) - 1));
                 ldmEntry_t entry;
 
                 entry.offset = (U32)(split - base);
-                entry.checksum = (U32)(xxhash >> 32);
+                entry.checksum = (U32)(xxhnash >> 32);
                 ZSTDn_ldm_insertEntry(ldmState, hash, entry, *params);
             }
         }
@@ -348,12 +348,12 @@ static size_t ZSTDn_ldm_generateSequences_internal(
 
         for (n = 0; n < numSplits; n++) {
             BYTE const* const split = ip + splits[n] - minMatchLength;
-            U64 const xxhash = xxh64(split, minMatchLength, 0);
-            U32 const hash = (U32)(xxhash & (((U32)1 << hBits) - 1));
+            U64 const xxhnash = xxhn64(split, minMatchLength, 0);
+            U32 const hash = (U32)(xxhnash & (((U32)1 << hBits) - 1));
 
             candidates[n].split = split;
             candidates[n].hash = hash;
-            candidates[n].checksum = (U32)(xxhash >> 32);
+            candidates[n].checksum = (U32)(xxhnash >> 32);
             candidates[n].bucket = ZSTDn_ldm_getBucket(ldmState, hash, *params);
             PREFETCH_L1(candidates[n].bucket);
         }

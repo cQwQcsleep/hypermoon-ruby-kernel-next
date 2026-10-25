@@ -1646,7 +1646,7 @@ static size_t ZSTDn_resetCCtx_internal(ZSTDn_CCtx* zc,
             (unsigned)pledgedSrcSize, zc->appliedParams.fParams.contentSizeFlag);
         zc->blockSize = blockSize;
 
-        xxh64_reset(&zc->xxhState, 0);
+        xxhn64_reset(&zc->xxhnState, 0);
         zc->stage = ZSTDcs_init;
         zc->dictID = 0;
         zc->dictContentSize = 0;
@@ -2800,7 +2800,7 @@ static size_t ZSTDn_compress_frameChunk (ZSTDn_CCtx* cctx,
 
     DEBUGLOG(4, "ZSTDn_compress_frameChunk (blockSize=%u)", (unsigned)blockSize);
     if (cctx->appliedParams.fParams.checksumFlag && srcSize)
-        xxh64_update(&cctx->xxhState, src, srcSize);
+        xxhn64_update(&cctx->xxhnState, src, srcSize);
 
     while (remaining) {
         ZSTDn_matchState_t* const ms = &cctx->blockState.matchState;
@@ -3436,7 +3436,7 @@ static size_t ZSTDn_writeEpilogue(ZSTDn_CCtx* cctx, void* dst, size_t dstCapacit
     }
 
     if (cctx->appliedParams.fParams.checksumFlag) {
-        U32 const checksum = (U32) xxh64_digest(&cctx->xxhState);
+        U32 const checksum = (U32) xxhn64_digest(&cctx->xxhnState);
         RETURN_ERROR_IF(dstCapacity<4, dstSize_tooSmall, "no room for checksum");
         DEBUGLOG(4, "ZSTDn_writeEpilogue: write checksum : %08X", (unsigned)checksum);
         MEMn_writeLE32(op, checksum);
@@ -4810,7 +4810,7 @@ size_t ZSTDn_compressSequences(ZSTDn_CCtx* const cctx, void* dst, size_t dstCapa
     dstCapacity -= frameHeaderSize;
     cSize += frameHeaderSize;
     if (cctx->appliedParams.fParams.checksumFlag && srcSize) {
-        xxh64_update(&cctx->xxhState, src, srcSize);
+        xxhn64_update(&cctx->xxhnState, src, srcSize);
     }
     /* cSize includes block header size and compressed sequences size */
     compressedBlocksSize = ZSTDn_compressSequences_internal(cctx,
@@ -4822,7 +4822,7 @@ size_t ZSTDn_compressSequences(ZSTDn_CCtx* const cctx, void* dst, size_t dstCapa
     dstCapacity -= compressedBlocksSize;
 
     if (cctx->appliedParams.fParams.checksumFlag) {
-        U32 const checksum = (U32) xxh64_digest(&cctx->xxhState);
+        U32 const checksum = (U32) xxhn64_digest(&cctx->xxhnState);
         RETURN_ERROR_IF(dstCapacity<4, dstSize_tooSmall, "no room for checksum");
         DEBUGLOG(4, "Write checksum : %08X", (unsigned)checksum);
         MEMn_writeLE32((char*)dst + cSize, checksum);

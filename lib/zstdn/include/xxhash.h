@@ -65,11 +65,11 @@
  * It depends on successfully passing SMHasher test set.
  * 10 is a perfect score.
  *
- * A 64-bits version, named xxh64 offers much better speed,
+ * A 64-bits version, named xxhn64 offers much better speed,
  * but for 64-bits applications only.
  * Name     Speed on 64 bits    Speed on 32 bits
- * xxh64       13.8 GB/s            1.9 GB/s
- * xxh32        6.8 GB/s            6.0 GB/s
+ * xxhn64       13.8 GB/s            1.9 GB/s
+ * xxhn32        6.8 GB/s            6.0 GB/s
  */
 
 #ifndef XXHnASH_H
@@ -82,7 +82,7 @@
  *****************************/
 
 /**
- * xxh32() - calculate the 32-bit hash of the input with a given seed.
+ * xxhn32() - calculate the 32-bit hash of the input with a given seed.
  *
  * @input:  The data to hash.
  * @length: The length of the data to hash.
@@ -92,10 +92,10 @@
  *
  * Return:  The 32-bit hash of the data.
  */
-uint32_t xxh32(const void *input, size_t length, uint32_t seed);
+uint32_t xxhn32(const void *input, size_t length, uint32_t seed);
 
 /**
- * xxh64() - calculate the 64-bit hash of the input with a given seed.
+ * xxhn64() - calculate the 64-bit hash of the input with a given seed.
  *
  * @input:  The data to hash.
  * @length: The length of the data to hash.
@@ -105,28 +105,28 @@ uint32_t xxh32(const void *input, size_t length, uint32_t seed);
  *
  * Return:  The 64-bit hash of the data.
  */
-uint64_t xxh64(const void *input, size_t length, uint64_t seed);
+uint64_t xxhn64(const void *input, size_t length, uint64_t seed);
 
 /**
- * xxhash() - calculate wordsize hash of the input with a given seed
+ * xxhnash() - calculate wordsize hash of the input with a given seed
  * @input:  The data to hash.
  * @length: The length of the data to hash.
  * @seed:   The seed can be used to alter the result predictably.
  *
  * If the hash does not need to be comparable between machines with
- * different word sizes, this function will call whichever of xxh32()
- * or xxh64() is faster.
+ * different word sizes, this function will call whichever of xxhn32()
+ * or xxhn64() is faster.
  *
  * Return:  wordsize hash of the data.
  */
 
-static inline unsigned long xxhash(const void *input, size_t length,
+static inline unsigned long xxhnash(const void *input, size_t length,
 				   uint64_t seed)
 {
 #if BITS_PER_LONG == 64
-       return xxh64(input, length, seed);
+       return xxhn64(input, length, seed);
 #else
-       return xxh32(input, length, seed);
+       return xxhn32(input, length, seed);
 #endif
 }
 
@@ -141,9 +141,9 @@ static inline unsigned long xxhash(const void *input, size_t length,
  */
 
 /**
- * struct xxh32_state - private xxh32 state, do not use members directly
+ * struct xxhn32_state - private xxhn32 state, do not use members directly
  */
-struct xxh32_state {
+struct xxhn32_state {
 	uint32_t total_len_32;
 	uint32_t large_len;
 	uint32_t v1;
@@ -155,9 +155,9 @@ struct xxh32_state {
 };
 
 /**
- * struct xxh32_state - private xxh64 state, do not use members directly
+ * struct xxhn32_state - private xxhn64 state, do not use members directly
  */
-struct xxh64_state {
+struct xxhn64_state {
 	uint64_t total_len;
 	uint64_t v1;
 	uint64_t v2;
@@ -168,92 +168,92 @@ struct xxh64_state {
 };
 
 /**
- * xxh32_reset() - reset the xxh32 state to start a new hashing operation
+ * xxhn32_reset() - reset the xxhn32 state to start a new hashing operation
  *
- * @state: The xxh32 state to reset.
+ * @state: The xxhn32 state to reset.
  * @seed:  Initialize the hash state with this seed.
  *
- * Call this function on any xxh32_state to prepare for a new hashing operation.
+ * Call this function on any xxhn32_state to prepare for a new hashing operation.
  */
-void xxh32_reset(struct xxh32_state *state, uint32_t seed);
+void xxhn32_reset(struct xxhn32_state *state, uint32_t seed);
 
 /**
- * xxh32_update() - hash the data given and update the xxh32 state
+ * xxhn32_update() - hash the data given and update the xxhn32 state
  *
- * @state:  The xxh32 state to update.
+ * @state:  The xxhn32 state to update.
  * @input:  The data to hash.
  * @length: The length of the data to hash.
  *
- * After calling xxh32_reset() call xxh32_update() as many times as necessary.
+ * After calling xxhn32_reset() call xxhn32_update() as many times as necessary.
  *
  * Return:  Zero on success, otherwise an error code.
  */
-int xxh32_update(struct xxh32_state *state, const void *input, size_t length);
+int xxhn32_update(struct xxhn32_state *state, const void *input, size_t length);
 
 /**
- * xxh32_digest() - produce the current xxh32 hash
+ * xxhn32_digest() - produce the current xxhn32 hash
  *
- * @state: Produce the current xxh32 hash of this state.
+ * @state: Produce the current xxhn32 hash of this state.
  *
  * A hash value can be produced at any time. It is still possible to continue
- * inserting input into the hash state after a call to xxh32_digest(), and
- * generate new hashes later on, by calling xxh32_digest() again.
+ * inserting input into the hash state after a call to xxhn32_digest(), and
+ * generate new hashes later on, by calling xxhn32_digest() again.
  *
- * Return: The xxh32 hash stored in the state.
+ * Return: The xxhn32 hash stored in the state.
  */
-uint32_t xxh32_digest(const struct xxh32_state *state);
+uint32_t xxhn32_digest(const struct xxhn32_state *state);
 
 /**
- * xxh64_reset() - reset the xxh64 state to start a new hashing operation
+ * xxhn64_reset() - reset the xxhn64 state to start a new hashing operation
  *
- * @state: The xxh64 state to reset.
+ * @state: The xxhn64 state to reset.
  * @seed:  Initialize the hash state with this seed.
  */
-void xxh64_reset(struct xxh64_state *state, uint64_t seed);
+void xxhn64_reset(struct xxhn64_state *state, uint64_t seed);
 
 /**
- * xxh64_update() - hash the data given and update the xxh64 state
- * @state:  The xxh64 state to update.
+ * xxhn64_update() - hash the data given and update the xxhn64 state
+ * @state:  The xxhn64 state to update.
  * @input:  The data to hash.
  * @length: The length of the data to hash.
  *
- * After calling xxh64_reset() call xxh64_update() as many times as necessary.
+ * After calling xxhn64_reset() call xxhn64_update() as many times as necessary.
  *
  * Return:  Zero on success, otherwise an error code.
  */
-int xxh64_update(struct xxh64_state *state, const void *input, size_t length);
+int xxhn64_update(struct xxhn64_state *state, const void *input, size_t length);
 
 /**
- * xxh64_digest() - produce the current xxh64 hash
+ * xxhn64_digest() - produce the current xxhn64 hash
  *
- * @state: Produce the current xxh64 hash of this state.
+ * @state: Produce the current xxhn64 hash of this state.
  *
  * A hash value can be produced at any time. It is still possible to continue
- * inserting input into the hash state after a call to xxh64_digest(), and
- * generate new hashes later on, by calling xxh64_digest() again.
+ * inserting input into the hash state after a call to xxhn64_digest(), and
+ * generate new hashes later on, by calling xxhn64_digest() again.
  *
- * Return: The xxh64 hash stored in the state.
+ * Return: The xxhn64 hash stored in the state.
  */
-uint64_t xxh64_digest(const struct xxh64_state *state);
+uint64_t xxhn64_digest(const struct xxhn64_state *state);
 
 /*-**************************
  * Utils
  ***************************/
 
 /**
- * xxh32_copy_state() - copy the source state into the destination state
+ * xxhn32_copy_state() - copy the source state into the destination state
  *
- * @src: The source xxh32 state.
- * @dst: The destination xxh32 state.
+ * @src: The source xxhn32 state.
+ * @dst: The destination xxhn32 state.
  */
-void xxh32_copy_state(struct xxh32_state *dst, const struct xxh32_state *src);
+void xxhn32_copy_state(struct xxhn32_state *dst, const struct xxhn32_state *src);
 
 /**
- * xxh64_copy_state() - copy the source state into the destination state
+ * xxhn64_copy_state() - copy the source state into the destination state
  *
- * @src: The source xxh64 state.
- * @dst: The destination xxh64 state.
+ * @src: The source xxhn64 state.
+ * @dst: The destination xxhn64 state.
  */
-void xxh64_copy_state(struct xxh64_state *dst, const struct xxh64_state *src);
+void xxhn64_copy_state(struct xxhn64_state *dst, const struct xxhn64_state *src);
 
 #endif /* XXHnASH_H */
