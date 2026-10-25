@@ -127,8 +127,14 @@ obj-$(CONFIG_RSEQ) += rseq.o
 $(obj)/configs.o: $(obj)/config_data.h
 
 targets += config_data.gz
+# Android's system_server fetches /proc/config.gz at boot (Debug.isVmapStack)
+# and aborts when it is missing, so IKCONFIG must stay enabled. Drop the
+# KernelSU/SUSFS/KPM lines from the embedded copy so the root integration is
+# still not discoverable through it.
+quiet_cmd_ikcfg = GZIP    $@
+      cmd_ikcfg = grep -vE 'KSU|SUSFS|KPM' $< | gzip -n -9 > $@
 $(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
-	$(call if_changed,gzip)
+	$(call if_changed,ikcfg)
 
       filechk_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;")
 targets += config_data.h
