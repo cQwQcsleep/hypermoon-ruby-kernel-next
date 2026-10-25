@@ -19,10 +19,13 @@ that HyperMoon uses.
 
 ## What is included
 
-- HyperMoon `1.0.2` (`beba7f1c`) as the device/vendor and kernel baseline.
+- HyperMoon `main` (`742b01b`) as the device/vendor and kernel baseline
+  (its SUSFS 2.1.0 deinlined hooks match the vendored KSU driver).
 - BBR as the default TCP congestion control, with FQ, FQ-CoDel and CAKE.
 - F2FS transparent compression (LZO, LZ4, ZSTD).
-- ZRAM compressors: LZO, LZ4, LZ4HC, ZSTD and 842.
+- ZRAM compressors: LZO, LZO-RLE (backported from 5.10), LZ4, LZ4HC,
+  deflate, 842, ZSTD, LZ4K, LZ4KD and LZ4K_OPLUS (the latter three from
+  `SukiSU_patch/other/zram`, adapted to the 4.19 comp API).
 - Kprobes/uprobes, for APatch and KernelSU-style kernel hooks.
 - TMPFS extended attributes and POSIX ACLs.
 - Existing HyperMoon features retained: EROFS, exFAT, WireGuard, PSI,
@@ -52,10 +55,13 @@ Two variants are produced:
 
 The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
 `639e2e36` (tag `v4.2.0-rc3`, version code `40700`). Manager APK
-signatures accepted by the driver: KernelSU Official (`tiann`), MKSU
-(`5ec1cff`), RKSU (`rsuntk`), SukiSU-Ultra, ReSukiSU and KOWSU
-(`KOWX712`), plus dynamically registered manager signatures. The version
-string shown in the manager is reduced to the bare version code.
+signatures accepted by the driver (all verified against the latest
+release certificates): KernelSU Official v3.3.1, KernelSU-Next v3.4.2
+(normal and spoofed), MKSU v9.9.9, RKSU v3.2.2-10-legacy,
+SukiSU-Ultra v4.2.1-r2 (normal and spoofed) and ReSukiSU v4.2.0-rc3,
+plus dynamically registered manager signatures. KOWSU (`KOWX712`) was
+dropped because the project publishes no releases. The version string
+shown in the manager is reduced to the bare version code.
 
 ## Build
 
