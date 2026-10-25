@@ -5,22 +5,21 @@ Third-party Linux 4.19 kernel for the Redmi Note 12 Pro 5G / Pro+ 5G
 
 This tree starts from the upstream
 [HyperMoon kernel](https://github.com/DXRN-MoonWake/hypermoon_kernel_xiaomi_ruby)
-and keeps its device support and boot behaviour. On top of that it updates
-the 4.19 branch to CIP `v4.19.325-cip135` and enables a set of optional
-kernel features.
+release `1.0.2` (`beba7f1c`), whose boot behaviour is verified on ruby, and
+only adds optional kernel features plus the KernelSU/SUSFS integration on
+top of it. It is built with the same AOSP clang `r383902` (11.0.1) prebuilt
+that HyperMoon uses.
 
 > HyperMoon keeps the upstream UTS version string spoofed to `5.10.246`
 > for Android compatibility. The source tree is still Linux 4.19.325.
 > This build strips its own localversion suffixes, so `uname -r` reports
 > exactly `5.10.246` and the version banner no longer carries the tree
-> name, CIP revision, tag count or git commit hash. Build user and host
-> are pinned to `builder@buildhost` so the runner identity is not leaked.
+> name or git commit hash. Build user and host are pinned to
+> `builder@buildhost` so the runner identity is not leaked.
 
 ## What is included
 
-- HyperMoon `main` at `742b01b` as the device/vendor baseline.
-- Linux 4.19 CIP `v4.19.325-cip135` security and stable updates
-  (CIP `-cip126` -> `-cip135`, 1679 upstream commits).
+- HyperMoon `1.0.2` (`beba7f1c`) as the device/vendor and kernel baseline.
 - BBR as the default TCP congestion control, with FQ, FQ-CoDel and CAKE.
 - F2FS transparent compression (LZO, LZ4, ZSTD).
 - ZRAM compressors: LZO, LZ4, LZ4HC, ZSTD and 842.
