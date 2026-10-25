@@ -85,12 +85,21 @@ artifacts: `hypermoon-ruby-vanilla` and `hypermoon-ruby-ksu`.
 The zips follow the same AnyKernel3 layout and install path as HyperMoon:
 the payload is a plain `Image.gz`, `block=boot`, `is_slot_device=1`,
 ramdisk compression and vbmeta handling are `auto`, so the stock boot dtb
-and the active A/B slot are handled by AnyKernel3 exactly as before.
+is kept and the boot partition is repacked by AnyKernel3.
+
+`slot_select=active` is set explicitly: AnyKernel3 otherwise silently
+retargets the *inactive* slot whenever `/postinstall/tmp` exists (Kernel
+Flasher and recovery/OTA environments do), which reports `Done!` while
+the running kernel is never replaced. The script now prints the target
+partition and verifies the written data by reading it back; a mismatch
+aborts with an error instead of reporting success.
 
 1. Unlock the bootloader and back up the current boot partition.
-2. Boot a recovery that can flash AnyKernel3 zips.
-3. Flash `dist/hypermoon-ruby-*.zip` (no wipes, no extra steps).
-4. Reboot.
+2. Flash `dist/hypermoon-ruby-*.zip` with Kernel Flasher, a recovery, or
+   any AnyKernel3-compatible flasher (no wipes, no extra steps).
+3. Check the flasher log for `Flashed to: /dev/block/...` followed by
+   `Readback verified`, then reboot.
+4. Verify with `uname -r` (this kernel reports `5.10.246`).
 
 Switching between the `vanilla` and `ksu` zips, or changing the KernelSU
 manager, uses the same procedure as HyperMoon: for a clean KSU install,
