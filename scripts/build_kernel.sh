@@ -6,13 +6,50 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 VARIANT="${1:-${VARIANT:-vanilla}}"
+# Every manager ships its own UAPI revision and compares it against the value
+# the kernel reports in GET_INFO, so build one kernel per manager with the
+# matching value. Released values (checked against each upstream tag):
+#   KernelSU v3.3.1            -> 5
+#   KernelSU-Next v3.4.2       -> 5
+#   SukiSU-Ultra v4.2.1-r2     -> 6
+#   ReSukiSU v4.2.0-rc3        -> 6
+#   MKSU (5ec1cff) v9.9.9      -> 2
+#   RKSU (rsuntk) v3.2.2-10    -> no UAPI check, kernel version >= 32377
 case "$VARIANT" in
-	vanilla|ksu) ;;
+	vanilla) ;;
+	ksu|ksu-resukisu)
+		KSU_UAPI_VERSION_OVERRIDE=6
+		KSU_TAG_NAME_OVERRIDE=v4.2.0-rc3
+		KSU_COMMIT_SHA_OVERRIDE=639e2e36
+		;;
+	ksu-sukisu)
+		KSU_UAPI_VERSION_OVERRIDE=6
+		KSU_TAG_NAME_OVERRIDE=v4.2.1-r2
+		;;
+	ksu-official)
+		KSU_UAPI_VERSION_OVERRIDE=5
+		KSU_TAG_NAME_OVERRIDE=v3.3.1
+		;;
+	ksu-next)
+		KSU_UAPI_VERSION_OVERRIDE=5
+		KSU_TAG_NAME_OVERRIDE=v3.4.2
+		;;
+	ksu-mksu)
+		KSU_UAPI_VERSION_OVERRIDE=2
+		KSU_TAG_NAME_OVERRIDE=v9.9.9
+		;;
+	ksu-rksu)
+		KSU_UAPI_VERSION_OVERRIDE=6
+		KSU_TAG_NAME_OVERRIDE=v3.2.2-10
+		;;
 	*)
-		echo "error: unknown variant '$VARIANT' (use vanilla or ksu)" >&2
+		echo "error: unknown variant '$VARIANT'" >&2
+		echo "       use vanilla, ksu, ksu-official, ksu-next, ksu-sukisu," >&2
+		echo "       ksu-resukisu, ksu-mksu or ksu-rksu" >&2
 		exit 1
 		;;
 esac
+export KSU_UAPI_VERSION_OVERRIDE KSU_TAG_NAME_OVERRIDE KSU_COMMIT_SHA_OVERRIDE
 
 OUT="${OUT:-$ROOT/out-$VARIANT}"
 JOBS="${JOBS:-$(nproc)}"
@@ -98,12 +135,12 @@ MAKE_ARGS=(
 make "${MAKE_ARGS[@]}" ruby_defconfig
 scripts/kconfig/merge_config.sh -m -O "$OUT" \
 	"$OUT/.config" arch/arm64/configs/vendor/ruby_features.config >/dev/null 2>&1
-if [ "$VARIANT" = "ksu" ]; then
+if [ "$VARIANT" != "vanilla" ]; then
 	scripts/kconfig/merge_config.sh -m -O "$OUT" \
 		"$OUT/.config" arch/arm64/configs/vendor/ruby_ksu.config >/dev/null 2>&1
 fi
 make "${MAKE_ARGS[@]}" olddefconfig
-if [ "$VARIANT" = "ksu" ]; then
+if [ "$VARIANT" != "vanilla" ]; then
 	# KSU uses generated UTS/SELinux headers; build their producers first
 	# so parallel clean builds cannot race them.
 	make -j"$JOBS" "${MAKE_ARGS[@]}" init/

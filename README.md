@@ -31,17 +31,29 @@ that HyperMoon uses.
 - Existing HyperMoon features retained: EROFS, exFAT, WireGuard, PSI,
   uclamp, MTK scheduler extensions and the MediaTek/Xiaomi drivers.
 
-Two variants are produced:
+Variants are produced per manager, because each released manager pins its
+own driver UAPI revision and rejects a kernel that reports a different one
+(the GET_INFO `uapi_version` field):
 
-- `vanilla` - the kernel above without a root driver.
-- `ksu` - the same kernel with a built-in ReSukiSU/BakaSU driver and
-  SUSFS `v2.1.0` inline hooks. Enabled hiding features: suspicious path,
-  mount, kstat and mmap hiding, uname spoofing, cmdline spoofing, open
-  redirect, KSU/SUSFS symbol hiding and AVC log spoofing. SUSFS logging
-  is disabled, and `/proc/config.gz` is removed so the KSU/SUSFS options
-  are not exposed. `CONFIG_KALLSYMS_ALL` is turned off to shrink the
-  symbol surface of `/proc/kallsyms`, and dmesg is restricted to
-  privileged processes.
+| variant | manager | driver UAPI |
+| --- | --- | --- |
+| `vanilla` | none (no root driver) | - |
+| `ksu-official` | KernelSU v3.3.1 | 5 |
+| `ksu-next` | KernelSU-Next v3.4.2 | 5 |
+| `ksu-sukisu` | SukiSU-Ultra v4.2.1-r2 | 6 |
+| `ksu-resukisu` (alias `ksu`) | ReSukiSU v4.2.0-rc3 | 6 |
+| `ksu-mksu` | MKSU v9.9.9 | 2 |
+| `ksu-rksu` | RKSU v3.2.2-10-legacy | no UAPI check (kernel >= 32377) |
+
+All KSU variants share the same built-in ReSukiSU/BakaSU driver and
+SUSFS `v2.1.0` inline hooks; only the reported driver version differs.
+Enabled hiding features: suspicious path, mount, kstat and mmap hiding,
+uname spoofing, cmdline spoofing, open redirect, KSU/SUSFS symbol hiding
+and AVC log spoofing. SUSFS logging is disabled. `/proc/config.gz` is
+kept (system_server needs it) with the KSU/SUSFS lines filtered out,
+`CONFIG_KALLSYMS_ALL` stays on as HyperMoon ships it with symbol hiding
+done by name filtering, and dmesg is restricted to privileged processes.
+
 - Additional anti-detection hardening aimed at Duck Detector style
   probes: the reboot supercall only installs the driver fd for root,
   manager or allowlisted UIDs (a forged call now returns `EINVAL` like a
@@ -54,7 +66,7 @@ Two variants are produced:
   `xposed_data`, `msd_*`, ...) with `EINVAL` for unprivileged callers.
 
 The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
-`639e2e36` (tag `v4.2.0-rc3`, version code `40700`). Manager APK
+`639e2e36` (tag `v4.2.0-rc3`, version code `41100`). Manager APK
 signatures accepted by the driver (all verified against the latest
 release certificates): KernelSU Official v3.3.1, KernelSU-Next v3.4.2
 (normal and spoofed), MKSU v9.9.9, RKSU v3.2.2-10-legacy,
@@ -75,15 +87,18 @@ sudo apt-get install -y bc bison flex cpio libelf-dev libssl-dev zip \
 LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh vanilla
 bash scripts/package_anykernel.sh vanilla
 
-LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh ksu
-bash scripts/package_anykernel.sh ksu
+# pick the variant matching the manager you will install
+for v in ksu-official ksu-next ksu-sukisu ksu-resukisu ksu-mksu ksu-rksu; do
+  LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh "$v"
+  bash scripts/package_anykernel.sh "$v"
+done
 ```
 
-Kernels are written to `out-vanilla/` and `out-ksu/`; flashable AnyKernel3
-zips are written to `dist/`.
+Kernels are written to `out-<variant>/`; flashable AnyKernel3 zips are
+written to `dist/`.
 
-GitHub Actions builds both variants on every push and uploads two
-artifacts: `hypermoon-ruby-vanilla` and `hypermoon-ruby-ksu`.
+GitHub Actions builds all variants on every push and uploads one artifact
+per variant (`hypermoon-ruby-vanilla`, `hypermoon-ruby-ksu-official`, ...).
 
 ## Flash
 

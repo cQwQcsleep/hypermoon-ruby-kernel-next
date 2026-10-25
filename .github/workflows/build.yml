@@ -16,7 +16,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [vanilla, ksu]
+        # One KSU build per manager: each manager pins its own UAPI revision,
+        # and a kernel reporting a different value is shown as "update the
+        # manager" or "incompatible".
+        variant:
+          - vanilla
+          - ksu-official
+          - ksu-next
+          - ksu-sukisu
+          - ksu-resukisu
+          - ksu-mksu
+          - ksu-rksu
     name: build-${{ matrix.variant }}
     steps:
       - name: Checkout

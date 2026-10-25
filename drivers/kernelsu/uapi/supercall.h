@@ -20,8 +20,15 @@
 // 5: add EVENT_SERVICES with a start/skip result
 // 6: add KSU_IOCTL_LOOKUP_SYMBOLS and KSU_GET_INFO_FLAG_PREINIT
 // Managers compare this against their own managerUAPIVersion and refuse to
-// talk to a kernel that reports an older one.
-static const __u32 KERNEL_SU_UAPI_VERSION = 6;
+// talk to a kernel that reports an older one, and most of them also refuse a
+// kernel that reports a newer one. The released managers do not agree on the
+// same value (official v3.3.1 and Next v3.4.2 use 5, MKSU v9.9.9 uses 2,
+// SukiSU/ReSukiSU use 6), so each build can pin it via
+// KSU_UAPI_VERSION_OVERRIDE on the make command line.
+#ifndef KSU_UAPI_VERSION
+#define KSU_UAPI_VERSION 6
+#endif
+static const __u32 KERNEL_SU_UAPI_VERSION = KSU_UAPI_VERSION;
 
 /* Magic numbers for reboot hook to install fd */
 DEFINE_KSU_UAPI_CONST(__u32, KSU_INSTALL_MAGIC1, 0xDEADBEEF)

@@ -5,9 +5,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VARIANT="${1:-${VARIANT:-vanilla}}"
 case "$VARIANT" in
-	vanilla|ksu) ;;
+	vanilla) KSU_NAME="" ;;
+	ksu|ksu-resukisu) KSU_NAME="ReSukiSU" ;;
+	ksu-sukisu) KSU_NAME="SukiSU-Ultra" ;;
+	ksu-official) KSU_NAME="KernelSU" ;;
+	ksu-next) KSU_NAME="KernelSU-Next" ;;
+	ksu-mksu) KSU_NAME="MKSU" ;;
+	ksu-rksu) KSU_NAME="RKSU" ;;
 	*)
-		echo "error: unknown variant '$VARIANT' (use vanilla or ksu)" >&2
+		echo "error: unknown variant '$VARIANT'" >&2
 		exit 1
 		;;
 esac
@@ -42,16 +48,16 @@ trap 'rm -rf "$WORK"' EXIT
 cp -a "$TEMPLATE/." "$WORK/"
 rm -rf "$WORK/.git" "$WORK/.github"
 cp "$ROOT/anykernel.sh" "$WORK/anykernel.sh"
-if [ "$VARIANT" = "ksu" ]; then
-	sed -i 's/kernel.string=.*/kernel.string=HyperMoon Ruby Next (KSU + SUSFS)/' "$WORK/anykernel.sh"
+if [ -n "$KSU_NAME" ]; then
+	sed -i "s|kernel.string=.*|kernel.string=HyperMoon Ruby Next (KSU + SUSFS / $KSU_NAME)|" "$WORK/anykernel.sh"
 fi
 cp "$IMAGE" "$WORK/$PAYLOAD"
 
 VERSION="4.19.325"
 COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 SUFFIX=""
-if [ "$VARIANT" = "ksu" ]; then
-	SUFFIX="-ksu"
+if [ -n "$KSU_NAME" ]; then
+	SUFFIX="-$VARIANT"
 fi
 ZIP="$DIST/hypermoon-ruby-${VERSION}-${COMMIT}${SUFFIX}.zip"
 
