@@ -67,7 +67,7 @@ endif
 
 # Vendored snapshot; version is pinned so the build does not depend on a
 # nested git repository.
-KSU_VERSION := 40700
+KSU_VERSION := 41100
 KSU_TAG_NAME := v4.2.0-rc3
 KSU_COMMIT_SHA := 639e2e36
 KSU_BRANCH_NAME := main

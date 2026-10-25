@@ -14,6 +14,15 @@
 
 #define KSU_FULL_VERSION_STRING 255
 
+// 2: allowlist v4 root profile flags
+// 3: scoped su-session driver fd
+// 4: add KSU_GET_INFO_FLAG_BUNDLED
+// 5: add EVENT_SERVICES with a start/skip result
+// 6: add KSU_IOCTL_LOOKUP_SYMBOLS and KSU_GET_INFO_FLAG_PREINIT
+// Managers compare this against their own managerUAPIVersion and refuse to
+// talk to a kernel that reports an older one.
+static const __u32 KERNEL_SU_UAPI_VERSION = 6;
+
 /* Magic numbers for reboot hook to install fd */
 DEFINE_KSU_UAPI_CONST(__u32, KSU_INSTALL_MAGIC1, 0xDEADBEEF)
 DEFINE_KSU_UAPI_CONST(__u32, KSU_INSTALL_MAGIC2, 0xCAFEBABE)
@@ -25,13 +34,24 @@ struct ksu_become_daemon_cmd {
 DEFINE_KSU_UAPI_CONST(__u32, EVENT_POST_FS_DATA, 1)
 DEFINE_KSU_UAPI_CONST(__u32, EVENT_BOOT_COMPLETED, 2)
 DEFINE_KSU_UAPI_CONST(__u32, EVENT_MODULE_MOUNTED, 3)
+DEFINE_KSU_UAPI_CONST(__u32, EVENT_SERVICES, 4)
 
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_LKM, (1U << 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_MANAGER, (1U << 1))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_LATE_LOAD, (1U << 2))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_PR_BUILD, (1U << 3))
+DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_BUNDLED, (1U << 4))
+DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_PREINIT, (1U << 5))
 
 struct ksu_get_info_cmd {
+    __u32 version; /* Output: KERNEL_SU_VERSION */
+    __u32 flags; /* Output: KSU_GET_INFO_FLAG_* bits */
+    __u32 features; /* Output: max feature ID supported */
+    __u32 uapi_version; /* Output: KERNEL_SU_UAPI_VERSION */
+};
+
+/* Pre-4-byte-uapi_version layout, still used by older managers */
+struct ksu_get_info_legacy_cmd {
     __u32 version; /* Output: KERNEL_SU_VERSION */
     __u32 flags; /* Output: KSU_GET_INFO_FLAG_* bits */
     __u32 features; /* Output: max feature ID supported */
@@ -213,7 +233,8 @@ struct ksu_get_kernel_patch_implement {
 
 /* IOCTL command definitions */
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GRANT_ROOT, _IOC(_IOC_NONE, 'K', 1, 0))
-DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_INFO, _IOC(_IOC_READ, 'K', 2, 0))
+DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_INFO, _IOR('K', 2, struct ksu_get_info_cmd))
+DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_INFO_LEGACY, _IOC(_IOC_READ, 'K', 2, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_REPORT_EVENT, _IOC(_IOC_WRITE, 'K', 3, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_SET_SEPOLICY, _IOC(_IOC_READ | _IOC_WRITE, 'K', 4, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_CHECK_SAFEMODE, _IOC(_IOC_READ, 'K', 5, 0))
