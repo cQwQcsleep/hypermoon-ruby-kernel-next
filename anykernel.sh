@@ -30,6 +30,11 @@ is_slot_device=1;
 # recovery OTA environments), so the flash "succeeds" but the running kernel
 # never changes.
 slot_select=active;
+# Pin the write size explicitly. ak3-core's split_boot declares customdd as a
+# local, so flash_boot falls through to "cat image /dev/zero > $block || true",
+# which swallows every write error. With customdd set, flash_boot uses dd and
+# reports failures instead of printing Done!.
+customdd="bs=1048576";
 ramdisk_compression=auto;
 patch_vbmeta_flag=auto;
 
@@ -43,19 +48,23 @@ write_boot; # use flash_boot to skip ramdisk repack, e.g. for devices with init_
 
 # Confirm what actually landed on the boot partition instead of trusting the
 # "Done!" that AnyKernel3 prints unconditionally after the write.
+# busybox here has no cmp applet, so compare md5sums instead.
 ui_print " " "Flashed to: $block (slot: ${slot:-none})";
 if [ -f "$home/boot-new.img" ]; then
   blocks=$(($(wc -c < "$home/boot-new.img") / 4096));
   if [ "$blocks" -gt 0 ]; then
     dd if=$block bs=4096 count=$blocks of=$home/readback.img 2>/dev/null;
     dd if="$home/boot-new.img" bs=4096 count=$blocks of=$home/expected.img 2>/dev/null;
-    if cmp -s $home/readback.img $home/expected.img; then
-      ui_print " " "Readback verified on $block";
-    else
-      rm -f $home/readback.img $home/expected.img;
+    readback_hash=$(md5sum $home/readback.img | cut -d\  -f1);
+    expected_hash=$(md5sum $home/expected.img | cut -d\  -f1);
+    ui_print " " "Boot image: $(wc -c < "$home/boot-new.img") bytes";
+    ui_print " " "Expected md5: $expected_hash";
+    ui_print " " "Readback md5: $readback_hash";
+    rm -f $home/readback.img $home/expected.img;
+    if [ "$readback_hash" != "$expected_hash" ]; then
       abort "Readback mismatch: $block was NOT updated. Aborting...";
     fi;
-    rm -f $home/readback.img $home/expected.img;
+    ui_print " " "Readback verified on $block";
   fi;
 fi;
 ## end boot install
