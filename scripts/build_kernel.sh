@@ -16,6 +16,13 @@ esac
 
 OUT="${OUT:-$ROOT/out-$VARIANT}"
 JOBS="${JOBS:-$(nproc)}"
+# HyperMoon 1.0.2 is built with the AOSP clang r383902 prebuilt (11.0.1) and
+# that combination is the one proven to boot on ruby; prefer it when present.
+if [ -z "${LLVM_DIR:-}" ]; then
+	for d in /opt/clang-r383902 "$HOME/toolchain/clang" "$HOME/clang-r383902" /usr/lib/llvm-17; do
+		[ -x "$d/bin/clang" ] && { LLVM_DIR="$d"; break; }
+	done
+fi
 LLVM_DIR="${LLVM_DIR:-/usr/lib/llvm-17}"
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
 

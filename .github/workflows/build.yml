@@ -33,12 +33,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             bc bison flex cpio libelf-dev libssl-dev zip \
-            clang-17 lld-17 llvm-17 \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+          # HyperMoon 1.0.2 is built with this AOSP prebuilt (clang 11.0.1,
+          # r383902) and that is the combination proven to boot on ruby.
+          mkdir -p "$HOME/toolchain"
+          cd "$HOME/toolchain"
+          curl -sSL -o clang.tar.gz \
+            "https://github.com/techyminati/android_prebuilts_clang_host_linux-x86_clang-6443078/archive/refs/heads/11.0.1.tar.gz"
+          mkdir -p clang
+          tar -xzf clang.tar.gz -C clang --strip-components=1
+          "$HOME/toolchain/clang/bin/clang" --version
 
       - name: Build kernel (${{ matrix.variant }})
         run: |
-          export LLVM_DIR=/usr/lib/llvm-17
+          export LLVM_DIR="$HOME/toolchain/clang"
           export JOBS="$(nproc)"
           bash scripts/build_kernel.sh "${{ matrix.variant }}"
 
