@@ -28,16 +28,11 @@ else
 	echo "       (expected Image.gz or Image.gz-dtb; run scripts/build_kernel.sh first)" >&2
 	exit 1
 fi
-TEMPLATE="${ANY_KERNEL3_DIR:-$ROOT/.cache/AnyKernel3}"
+TEMPLATE="${ANY_KERNEL3_DIR:-$ROOT/anykernel3}"
 
 if [ ! -f "$TEMPLATE/anykernel.sh" ]; then
-	mkdir -p "$(dirname "$TEMPLATE")"
-	curl -L --retry 3 --fail \
-		"https://github.com/osm0sis/AnyKernel3/archive/refs/heads/master.tar.gz" \
-		-o "$ROOT/.cache/anykernel3.tar.gz"
-	rm -rf "$TEMPLATE"
-	mkdir -p "$TEMPLATE"
-	tar -xzf "$ROOT/.cache/anykernel3.tar.gz" -C "$TEMPLATE" --strip-components=1
+	echo "error: missing vendored AnyKernel3 template at $TEMPLATE" >&2
+	exit 1
 fi
 
 mkdir -p "$DIST"
@@ -45,7 +40,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 cp -a "$TEMPLATE/." "$WORK/"
-rm -rf "$WORK/.git" "$WORK/.github" "$WORK/README.md"
+rm -rf "$WORK/.git" "$WORK/.github"
 cp "$ROOT/anykernel.sh" "$WORK/anykernel.sh"
 if [ "$VARIANT" = "ksu" ]; then
 	sed -i 's/kernel.string=.*/kernel.string=HyperMoon Ruby Next (KSU + SUSFS)/' "$WORK/anykernel.sh"
@@ -63,7 +58,7 @@ ZIP="$DIST/hypermoon-ruby-${VERSION}-${COMMIT}${SUFFIX}.zip"
 rm -f "$ZIP"
 (
 	cd "$WORK"
-	zip -r9 "$ZIP" . -x '*placeholder'
+	zip -r9 "$ZIP" .
 )
 
 echo "package: $ZIP"
