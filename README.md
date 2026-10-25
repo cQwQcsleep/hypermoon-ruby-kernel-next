@@ -90,9 +90,11 @@ is kept and the boot partition is repacked by AnyKernel3.
 `slot_select=active` is set explicitly: AnyKernel3 otherwise silently
 retargets the *inactive* slot whenever `/postinstall/tmp` exists (Kernel
 Flasher and recovery/OTA environments do), which reports `Done!` while
-the running kernel is never replaced. The script now prints the target
-partition and verifies the written data by reading it back; a mismatch
-aborts with an error instead of reporting success.
+the running kernel is never replaced. The script also writes with `dd`
+instead of the error-swallowing `cat ... || true` branch, flushes the
+block device, and verifies the partition by md5. A mismatch aborts with
+an error instead of reporting success, and the repacked image is saved
+to `/sdcard/Download/hypermoon-ruby-boot.img` for `fastboot flash boot`.
 
 1. Unlock the bootloader and back up the current boot partition.
 2. Flash `dist/hypermoon-ruby-*.zip` with Kernel Flasher, a recovery, or
