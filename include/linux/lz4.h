@@ -56,6 +56,7 @@
  * Default value is 14, for 16KB, which nicely fits into Intel x86 L1 cache
  */
 #define LZ4_MEMORY_USAGE 14
+#define LZ4_DISTANCE_MAX 65535 /* limit to 16 bits offset */
 
 #define LZ4_MAX_INPUT_SIZE	0x7E000000 /* 2 113 929 216 bytes */
 #define LZ4_COMPRESSBOUND(isize)	(\
