@@ -24,8 +24,8 @@ that HyperMoon uses.
 - BBR as the default TCP congestion control, with FQ, FQ-CoDel and CAKE.
 - F2FS transparent compression (LZO, LZ4, ZSTD).
 - ZRAM compressors: LZO, LZO-RLE (backported from 5.10), LZ4, LZ4HC,
-  deflate, 842, ZSTD, LZ4K, LZ4KD and LZ4K_OPLUS (the latter three from
-  `SukiSU_patch/other/zram`, adapted to the 4.19 comp API).
+  deflate, 842, ZSTD, LZ4K, LZ4KD, LZ4K_OPLUS (SukiSU_patch) and ZSTDN
+  (OPPO zstd fork, symbol-prefixed so it coexists with ZSTD).
 - Kprobes/uprobes, for APatch and KernelSU-style kernel hooks.
 - TMPFS extended attributes and POSIX ACLs.
 - Existing HyperMoon features retained: EROFS, exFAT, WireGuard, PSI,
