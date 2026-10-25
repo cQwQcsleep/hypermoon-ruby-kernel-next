@@ -47,7 +47,7 @@ if [ "$VARIANT" = "ksu" ]; then
 fi
 cp "$IMAGE" "$WORK/$PAYLOAD"
 
-VERSION="4.19.325-cip135"
+VERSION="4.19.325"
 COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 SUFFIX=""
 if [ "$VARIANT" = "ksu" ]; then
