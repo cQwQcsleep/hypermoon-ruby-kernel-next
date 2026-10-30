@@ -31,28 +31,40 @@ that HyperMoon uses.
 - Existing HyperMoon features retained: EROFS, exFAT, WireGuard, PSI,
   uclamp, MTK scheduler extensions and the MediaTek/Xiaomi drivers.
 
-Variants are produced per manager, because each released manager pins its
-own driver UAPI revision and rejects a kernel that reports a different one
-(the GET_INFO `uapi_version` field):
+Variants are produced per manager. Each one builds that manager's **own
+upstream driver tree at its release tag** (vendored under
+`drivers/kernelsu-<manager>/`), so the driver version, UAPI revision and
+manager signature are genuinely the ones that manager expects — no version
+numbers are rewritten:
 
-| variant | manager | driver UAPI |
-| --- | --- | --- |
-| `vanilla` | none (no root driver) | - |
-| `ksu-official` | KernelSU v3.3.1 | 5 |
-| `ksu-next` | KernelSU-Next v3.4.2 | 5 |
-| `ksu-sukisu` | SukiSU-Ultra v4.2.1-r2 | 6 |
-| `ksu-resukisu` (alias `ksu`) | ReSukiSU v4.2.0-rc3 | 6 |
-| `ksu-mksu` | MKSU v9.9.9 | 2 |
-| `ksu-rksu` | RKSU v3.2.2-10-legacy | no UAPI check (kernel >= 32377) |
+| variant | manager | driver tree | notes |
+| --- | --- | --- | --- |
+| `vanilla` | none (no root driver) | - | |
+| `ksu-official` | KernelSU v3.3.1 | tiann/KernelSU v3.3.1 | 4.19 backports |
+| `ksu-next` | KernelSU-Next v3.4.2 | KernelSU-Next v3.4.2 | 4.19 backports |
+| `ksu-sukisu` | SukiSU-Ultra v4.2.1-r2 | SukiSU-Ultra v4.2.1-r2 | 4.19 backports |
+| `ksu-resukisu` (alias `ksu`) | ReSukiSU v4.2.0-rc3 | ReSukiSU v4.2.0-rc3 | SUSFS inline |
+| `ksu-mksu` | MKSU v9.9.9 | 5ec1cff/KernelSU v9.9.9 | 4.19 backports |
+| `ksu-rksu` | RKSU v3.2.2-10-legacy | rsuntk/KernelSU v3.2.2-10-legacy | native legacy kernel |
 
-All KSU variants share the same built-in ReSukiSU/BakaSU driver and
-SUSFS `v2.1.0` inline hooks; only the reported driver version differs.
-Enabled hiding features: suspicious path, mount, kstat and mmap hiding,
-uname spoofing, cmdline spoofing, open redirect, KSU/SUSFS symbol hiding
-and AVC log spoofing. SUSFS logging is disabled. `/proc/config.gz` is
-kept (system_server needs it) with the KSU/SUSFS lines filtered out,
-`CONFIG_KALLSYMS_ALL` stays on as HyperMoon ships it with symbol hiding
-done by name filtering, and dmesg is restricted to privileged processes.
+The 5.10-era drivers need a Linux 4.19 compatibility layer to build here:
+`include/linux/pgtable.h`, `include/linux/minmax.h` and
+`include/uapi/linux/mount.h` forward the newer header names to their 4.19
+equivalents; `copy_*_nofault()` map onto `probe_*()`, `TWA_RESUME` onto the
+bool `task_work_add()` argument, and the seccomp action cache, file-wrapper
+`iopoll`/`remap_file_range`, fsnotify package observer and SELinux policy
+hider are compiled out below their upstream kernel floor (their per-feature
+code paths do not exist on 4.19). The SELinux rule injection layer is the
+ReSukiSU 4.19-compatible implementation.
+
+All KSU variants keep `/proc/config.gz` (system_server needs it) with the
+KSU/SUSFS lines filtered out, `CONFIG_KALLSYMS_ALL` as HyperMoon ships it
+with symbol hiding done by name filtering, and dmesg restricted to
+privileged processes. `ksu-resukisu` also enables SUSFS: suspicious path,
+kstat and mmap hiding, uname spoofing, cmdline spoofing, open redirect,
+KSU/SUSFS symbol hiding and AVC log spoofing (SUSFS logging is disabled,
+`SUS_MOUNT` stays off like HyperMoon). The other variants rely on their own
+driver's hiding features.
 
 - Additional anti-detection hardening aimed at Duck Detector style
   probes: the reboot supercall only installs the driver fd for root,
@@ -65,15 +77,14 @@ done by name filtering, and dmesg is restricted to privileged processes.
   (`su`, `ksu`, `ksu_file`, `magisk`, `magisk_file`, `lsposed_file`,
   `xposed_data`, `msd_*`, ...) with `EINVAL` for unprivileged callers.
 
-The KSU driver is a vendored snapshot of ReSukiSU/BakaSU
-`639e2e36` (tag `v4.2.0-rc3`, version code `41100`). Manager APK
-signatures accepted by the driver (all verified against the latest
-release certificates): KernelSU Official v3.3.1, KernelSU-Next v3.4.2
-(normal and spoofed), MKSU v9.9.9, RKSU v3.2.2-10-legacy,
-SukiSU-Ultra v4.2.1-r2 (normal and spoofed) and ReSukiSU v4.2.0-rc3,
-plus dynamically registered manager signatures. KOWSU (`KOWX712`) was
-dropped because the project publishes no releases. The version string
-shown in the manager is reduced to the bare version code.
+Each variant uses the manager's own manager-signature table from its driver
+tree, so the matching manager APK (official v3.3.1, Next v3.4.2, SukiSU-Ultra
+v4.2.1-r2, ReSukiSU v4.2.0-rc3, MKSU v9.9.9 or RKSU v3.2.2-10-legacy) is the
+one the kernel expects — no cross-manager signature faking. The ReSukiSU
+variant keeps its multi-manager signature list plus dynamically registered
+manager signatures, and its version string is reduced to the bare version
+code. KOWSU (`KOWX712`) was dropped because the project publishes no
+releases.
 
 ## Build
 

@@ -17,6 +17,18 @@ int task_work_add(struct task_struct *task, struct callback_head *twork, bool);
 struct callback_head *task_work_cancel(struct task_struct *, task_work_func_t);
 void task_work_run(void);
 
+/*
+ * Linux 5.8 replaced the bool @notify argument with the TWA_* enum.  On 4.19
+ * passing @notify = true is the "run on return to user mode" behaviour that
+ * TWA_RESUME selects on newer kernels.
+ */
+#ifndef TWA_RESUME
+#define TWA_RESUME true
+#endif
+#ifndef TWA_SIGNAL
+#define TWA_SIGNAL false
+#endif
+
 static inline void exit_task_work(struct task_struct *task)
 {
 	task_work_run();

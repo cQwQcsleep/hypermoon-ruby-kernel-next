@@ -227,5 +227,58 @@ source "drivers/interconnect/Kconfig"
 
 source "drivers/energy_model/Kconfig"
 
+menu "KernelSU driver"
+
+choice
+	prompt "KernelSU driver variant"
+	default KSU_DRIVER_RESUKISU
+	help
+	  Pick the upstream driver tree that matches the manager you install.
+	  Each manager checks the driver version/UAPI it was built against, so
+	  every variant ships that manager's own driver instead of faking the
+	  reported version.
+
+	config KSU_DRIVER_RESUKISU
+		bool "ReSukiSU v4.2.0-rc3"
+
+	config KSU_DRIVER_SUKISU
+		bool "SukiSU-Ultra v4.2.1-r2"
+
+	config KSU_DRIVER_OFFICIAL
+		bool "KernelSU v3.3.1"
+
+	config KSU_DRIVER_NEXT
+		bool "KernelSU-Next v3.4.2"
+
+	config KSU_DRIVER_MKSU
+		bool "MKSU v9.9.9"
+
+	config KSU_DRIVER_RKSU
+		bool "RKSU v3.2.2-10-legacy"
+endchoice
+endmenu
+
+if KSU_DRIVER_RESUKISU
 source "drivers/kernelsu/Kconfig"
+endif
+
+if KSU_DRIVER_SUKISU
+source "drivers/kernelsu-sukisu/Kconfig"
+endif
+
+if KSU_DRIVER_OFFICIAL
+source "drivers/kernelsu-official/Kconfig"
+endif
+
+if KSU_DRIVER_NEXT
+source "drivers/kernelsu-next/Kconfig"
+endif
+
+if KSU_DRIVER_MKSU
+source "drivers/kernelsu-mksu/Kconfig"
+endif
+
+if KSU_DRIVER_RKSU
+source "drivers/kernelsu-rksu/Kconfig"
+endif
 endmenu

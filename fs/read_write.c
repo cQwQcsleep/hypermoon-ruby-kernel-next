@@ -586,14 +586,18 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	return ret;
 }
 
-#ifdef CONFIG_KSU
+/*
+ * Inline read hook: ReSukiSU and RKSU export ksu_handle_sys_read(); the
+ * 5.x-derived drivers keep it static and use their tracepoint bridge.
+ */
+#if defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_RESUKISU) || defined(CONFIG_KSU_DRIVER_RKSU))
 extern __attribute__((cold)) int ksu_handle_sys_read(unsigned int fd,
  char __user **buf_ptr, size_t *count_ptr);
 #endif
 
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
-#ifdef CONFIG_KSU
+#if defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_RESUKISU) || defined(CONFIG_KSU_DRIVER_RKSU))
 	ksu_handle_sys_read(fd, &buf, &count);
 #endif
 	return ksys_read(fd, buf, count);

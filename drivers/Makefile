@@ -190,5 +190,12 @@ obj-$(CONFIG_MULTIPLEXER)	+= mux/
 obj-$(CONFIG_UNISYS_VISORBUS)	+= visorbus/
 obj-$(CONFIG_SIOX)		+= siox/
 obj-$(CONFIG_GNSS)		+= gnss/
-obj-$(CONFIG_KSU)		+= kernelsu/
+ifdef CONFIG_KSU
+obj-$(CONFIG_KSU_DRIVER_RESUKISU)	+= kernelsu/
+obj-$(CONFIG_KSU_DRIVER_SUKISU)		+= kernelsu-sukisu/
+obj-$(CONFIG_KSU_DRIVER_OFFICIAL)	+= kernelsu-official/
+obj-$(CONFIG_KSU_DRIVER_NEXT)		+= kernelsu-next/
+obj-$(CONFIG_KSU_DRIVER_MKSU)		+= kernelsu-mksu/
+obj-$(CONFIG_KSU_DRIVER_RKSU)		+= kernelsu-rksu/
+endif
 obj-$(CONFIG_INTERCONNECT)     += interconnect/

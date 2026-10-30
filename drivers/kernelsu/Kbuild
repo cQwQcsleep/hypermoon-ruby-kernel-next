@@ -72,27 +72,6 @@ KSU_TAG_NAME := v4.2.0-rc3
 KSU_COMMIT_SHA := 639e2e36
 KSU_BRANCH_NAME := main
 
-# Per-manager builds can override these from the environment (see
-# scripts/build_kernel.sh) so each manager sees the driver version it expects.
-ifdef KSU_VERSION_OVERRIDE
-KSU_VERSION := $(KSU_VERSION_OVERRIDE)
-endif
-
-ifdef KSU_TAG_NAME_OVERRIDE
-KSU_TAG_NAME := $(KSU_TAG_NAME_OVERRIDE)
-endif
-
-ifdef KSU_COMMIT_SHA_OVERRIDE
-KSU_COMMIT_SHA := $(KSU_COMMIT_SHA_OVERRIDE)
-endif
-
-# Managers compare GET_INFO's uapi_version against their own value and refuse
-# both older and (usually) newer kernels, so pin it per manager build.
-ifdef KSU_UAPI_VERSION_OVERRIDE
-ccflags-y += -DKSU_UAPI_VERSION=$(KSU_UAPI_VERSION_OVERRIDE)
-$(info -- KSU UAPI version override: $(KSU_UAPI_VERSION_OVERRIDE))
-endif
-
 # call subst to process placeholders
 KSU_VERSION_FULL := $(subst ",,$(CONFIG_KSU_FULL_NAME_FORMAT))
 KSU_VERSION_FULL := $(subst %TAG_NAME%,$(KSU_TAG_NAME),$(KSU_VERSION_FULL))

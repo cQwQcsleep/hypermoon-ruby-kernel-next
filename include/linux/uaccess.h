@@ -337,6 +337,28 @@ extern long notrace probe_kernel_write(void *dst, const void *src, size_t size);
 extern long notrace __probe_kernel_write(void *dst, const void *src, size_t size);
 
 /*
+ * Linux 5.8 renamed probe_kernel_read/write() to copy_from/to_kernel_nofault().
+ * The read side is provided as a weak function by the KSU compat layer, so
+ * only declare it here (a macro would clash with that definition).  The write
+ * side has no such provider and is mapped onto probe_kernel_write().
+ */
+#ifndef copy_from_kernel_nofault
+extern long copy_from_kernel_nofault(void *dst, const void *src, size_t size);
+#endif
+#ifndef copy_to_kernel_nofault
+#define copy_to_kernel_nofault(dst, src, size) \
+	probe_kernel_write((dst), (src), (size))
+#endif
+#ifndef copy_from_user_nofault
+#define copy_from_user_nofault(dst, src, size) \
+	probe_user_read((dst), (src), (size))
+#endif
+#ifndef copy_to_user_nofault
+#define copy_to_user_nofault(dst, src, size) \
+	probe_user_write((dst), (src), (size))
+#endif
+
+/*
  * probe_user_write(): safely attempt to write to a location in user space
  * @dst: address to write to
  * @src: pointer to the data that shall be written

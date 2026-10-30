@@ -93,6 +93,14 @@ static inline void get_seccomp_filter(struct task_struct *tsk)
 }
 #endif /* CONFIG_SECCOMP_FILTER */
 
+/*
+ * Linux 5.9 renamed put_seccomp_filter() to seccomp_filter_release(), but the
+ * semantics are the same.  Provide the newer name for 5.x-derived drivers.
+ */
+#ifndef seccomp_filter_release
+#define seccomp_filter_release(tsk) put_seccomp_filter(tsk)
+#endif
+
 #if defined(CONFIG_SECCOMP_FILTER) && defined(CONFIG_CHECKPOINT_RESTORE)
 extern long seccomp_get_filter(struct task_struct *task,
 			       unsigned long filter_off, void __user *data);

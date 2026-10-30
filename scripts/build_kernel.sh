@@ -6,42 +6,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 VARIANT="${1:-${VARIANT:-vanilla}}"
-# Every manager ships its own UAPI revision and compares it against the value
-# the kernel reports in GET_INFO, so build one kernel per manager with the
-# matching value. Released values (checked against each upstream tag):
-#   KernelSU v3.3.1            -> 5
-#   KernelSU-Next v3.4.2       -> 5
-#   SukiSU-Ultra v4.2.1-r2     -> 6
-#   ReSukiSU v4.2.0-rc3        -> 6
-#   MKSU (5ec1cff) v9.9.9      -> 2
-#   RKSU (rsuntk) v3.2.2-10    -> no UAPI check, kernel version >= 32377
+# One build per manager, each using that manager's own upstream driver tree at
+# its release tag (drivers/kernelsu-<manager>/). The driver then reports the
+# version, UAPI revision and manager signature that manager expects, so the
+# pairing is genuine instead of a rewritten version number.
 case "$VARIANT" in
-	vanilla) ;;
-	ksu|ksu-resukisu)
-		KSU_UAPI_VERSION_OVERRIDE=6
-		KSU_TAG_NAME_OVERRIDE=v4.2.0-rc3
-		KSU_COMMIT_SHA_OVERRIDE=639e2e36
-		;;
-	ksu-sukisu)
-		KSU_UAPI_VERSION_OVERRIDE=6
-		KSU_TAG_NAME_OVERRIDE=v4.2.1-r2
-		;;
-	ksu-official)
-		KSU_UAPI_VERSION_OVERRIDE=5
-		KSU_TAG_NAME_OVERRIDE=v3.3.1
-		;;
-	ksu-next)
-		KSU_UAPI_VERSION_OVERRIDE=5
-		KSU_TAG_NAME_OVERRIDE=v3.4.2
-		;;
-	ksu-mksu)
-		KSU_UAPI_VERSION_OVERRIDE=2
-		KSU_TAG_NAME_OVERRIDE=v9.9.9
-		;;
-	ksu-rksu)
-		KSU_UAPI_VERSION_OVERRIDE=6
-		KSU_TAG_NAME_OVERRIDE=v3.2.2-10
-		;;
+	vanilla) DRIVER="" ;;
+	ksu|ksu-resukisu) DRIVER="resukisu" ;;
+	ksu-sukisu) DRIVER="sukisu" ;;
+	ksu-official) DRIVER="official" ;;
+	ksu-next) DRIVER="next" ;;
+	ksu-mksu) DRIVER="mksu" ;;
+	ksu-rksu) DRIVER="rksu" ;;
 	*)
 		echo "error: unknown variant '$VARIANT'" >&2
 		echo "       use vanilla, ksu, ksu-official, ksu-next, ksu-sukisu," >&2
@@ -49,7 +25,6 @@ case "$VARIANT" in
 		exit 1
 		;;
 esac
-export KSU_UAPI_VERSION_OVERRIDE KSU_TAG_NAME_OVERRIDE KSU_COMMIT_SHA_OVERRIDE
 
 OUT="${OUT:-$ROOT/out-$VARIANT}"
 JOBS="${JOBS:-$(nproc)}"
@@ -135,12 +110,14 @@ MAKE_ARGS=(
 make "${MAKE_ARGS[@]}" ruby_defconfig
 scripts/kconfig/merge_config.sh -m -O "$OUT" \
 	"$OUT/.config" arch/arm64/configs/vendor/ruby_features.config >/dev/null 2>&1
-if [ "$VARIANT" != "vanilla" ]; then
+if [ -n "$DRIVER" ]; then
 	scripts/kconfig/merge_config.sh -m -O "$OUT" \
 		"$OUT/.config" arch/arm64/configs/vendor/ruby_ksu.config >/dev/null 2>&1
+	scripts/kconfig/merge_config.sh -m -O "$OUT" \
+		"$OUT/.config" arch/arm64/configs/vendor/ksu-driver-$DRIVER.config >/dev/null 2>&1
 fi
 make "${MAKE_ARGS[@]}" olddefconfig
-if [ "$VARIANT" != "vanilla" ]; then
+if [ -n "$DRIVER" ]; then
 	# KSU uses generated UTS/SELinux headers; build their producers first
 	# so parallel clean builds cannot race them.
 	make -j"$JOBS" "${MAKE_ARGS[@]}" init/

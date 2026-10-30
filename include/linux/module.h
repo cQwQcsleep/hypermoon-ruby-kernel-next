@@ -171,6 +171,14 @@ extern void cleanup_module(void);
 #define MODULE_SOFTDEP(_softdep) MODULE_INFO(softdep, _softdep)
 
 /*
+ * Symbol namespaces were added in Linux 5.4 (and the import side in 5.10);
+ * on 4.19 every symbol is global, so importing from a namespace is a no-op.
+ */
+#ifndef MODULE_IMPORT_NS
+#define MODULE_IMPORT_NS(_ns)
+#endif
+
+/*
  * The following license idents are currently accepted as indicating free
  * software modules
  *

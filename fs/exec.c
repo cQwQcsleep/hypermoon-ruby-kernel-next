@@ -1728,7 +1728,12 @@ static int exec_binprm(struct linux_binprm *bprm)
 /*
  * sys_execve() executes a new program.
  */
-#ifdef CONFIG_KSU
+/*
+ * Inline execve hook: only the ReSukiSU and RKSU drivers expose
+ * ksu_handle_execveat(); the 5.x-derived drivers hook execve through their
+ * own tracepoint bridge instead.
+ */
+#if defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_RESUKISU) || defined(CONFIG_KSU_DRIVER_RKSU))
 extern bool ksu_su_compat_enabled __read_mostly;
 extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
 			void *envp, int *flags);
@@ -1746,7 +1751,7 @@ static int __do_execve_file(int fd, struct filename *filename,
 
 	if (IS_ERR(filename))
 		return PTR_ERR(filename);
-#ifdef CONFIG_KSU
+#if defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_RESUKISU) || defined(CONFIG_KSU_DRIVER_RKSU))
 	if (!ksu_su_compat_enabled) {
 		goto orig_flow;
 	}

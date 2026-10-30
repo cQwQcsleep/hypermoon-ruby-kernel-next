@@ -634,7 +634,12 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
  * This function implements a generic ability to update ruid, euid,
  * and suid.  This allows you to implement the 4.4 compatible seteuid().
  */
-#ifdef CONFIG_KSU
+/*
+ * Only the ReSukiSU driver exports this 3-argument inline hook; RKSU has no
+ * such symbol and the tracepoint drivers use a 2-argument handler from their
+ * own syscall bridge.
+ */
+#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
 extern int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #endif
 
@@ -659,7 +664,7 @@ long __sys_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 	if ((suid != (uid_t) -1) && !uid_valid(ksuid))
 		return -EINVAL;
 
-#ifdef CONFIG_KSU
+#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
 	ksu_handle_setresuid(ruid, euid, suid);
 #endif
 
