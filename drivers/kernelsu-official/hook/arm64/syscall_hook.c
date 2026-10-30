@@ -217,6 +217,17 @@ void __init ksu_syscall_hook_init(void)
 
     ksu_dispatcher_nr = ni_slot;
     ksu_syscall_table_hook(ksu_dispatcher_nr, (syscall_fn_t)ksu_syscall_dispatcher, NULL);
+
+    // If the table entry did not change, the sys_enter redirect would send
+    // hooked syscalls (execve/faccessat/newfstatat/setresuid) to ni_syscall,
+    // i.e. every process would get -ENOSYS and init dies with "Attempted to
+    // kill init".  Disable the dispatcher instead of booting a broken system.
+    if (READ_ONCE(ksu_syscall_table[ksu_dispatcher_nr]) != (syscall_fn_t)ksu_syscall_dispatcher) {
+        pr_err("dispatcher patch did not take effect, syscall hooks disabled\n");
+        ksu_dispatcher_nr = -1;
+        return;
+    }
+
     pr_info("dispatcher installed at slot %d\n", ksu_dispatcher_nr);
 }
 

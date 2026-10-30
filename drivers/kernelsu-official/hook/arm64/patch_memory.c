@@ -65,6 +65,17 @@ unsigned long phys_from_virt(unsigned long addr, int *err)
         pr_debug("Address 0x%lx maps to a PMD-level huge page\n", addr);
         return __pmd_to_phys(*pmd) + ((addr & ~PMD_MASK));
     }
+#elif defined(pmd_sect)
+    /*
+     * Linux 4.19 has no pmd_leaf(); a 2 MB block is pmd_sect(), and on that
+     * kernel the kernel image/rodata are block-mapped.  Without this check
+     * pmd_bad() rejects the block entry and phys_from_virt() fails, which is
+     * what broke the syscall-table patch on ruby.
+     */
+    if (pmd_sect(*pmd)) {
+        pr_debug("Address 0x%lx maps to a PMD-level huge page\n", addr);
+        return __pmd_to_phys(*pmd) + ((addr & ~PMD_MASK));
+    }
 #endif
 
     if (pmd_none(*pmd) || pmd_bad(*pmd))
