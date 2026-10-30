@@ -6,6 +6,8 @@ kernelsu-objs += feature/sucompat.o
 kernelsu-objs += feature/kernel_umount.o
 kernelsu-objs += feature/sulog.o
 kernelsu-objs += feature/adb_root.o
+kernelsu-objs += feature/selinux_hide.o
+kernelsu-objs += feature/module_load_filter.o
 kernelsu-objs += hook/setuid_hook.o
 
 ifndef CONFIG_KSU_DISABLE_MANAGER
@@ -16,6 +18,7 @@ kernelsu-objs += manager/manager.o
 endif
 
 kernelsu-objs += compat/kernel_compat.o
+kernelsu-objs += infra/symbol_resolver.o
 kernelsu-objs += infra/su_mount_ns.o
 kernelsu-objs += infra/seccomp_cache.o
 kernelsu-objs += infra/file_wrapper.o
@@ -42,6 +45,9 @@ endif
 
 ifdef CONFIG_ARM64
 kernelsu-objs += compat/apatch_conflict.o
+# selinux_hide patches kernel text, so it needs the fixmap-based
+# patch_memory helper even in manual-hook mode.
+kernelsu-objs += hook/arm64/patch_memory.o
 endif
 
 ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes 
@@ -65,11 +71,12 @@ ifdef KBUILD_EXTMOD
 include $(KSU_SRC)/tools/ddk_compatible.mk
 endif
 
-# Vendored snapshot; version is pinned so the build does not depend on a
-# nested git repository.
-KSU_VERSION := 41100
+# Vendored snapshot of the released ReSukiSU/BakaSU v4.2.0-rc3 tree, which is
+# the source of the published manager APK (version code 35171, UAPI 4).
+# Version is pinned so the build does not depend on a nested git repository.
+KSU_VERSION := 35171
 KSU_TAG_NAME := v4.2.0-rc3
-KSU_COMMIT_SHA := 639e2e36
+KSU_COMMIT_SHA := 239e1e88
 KSU_BRANCH_NAME := main
 
 # call subst to process placeholders
@@ -111,7 +118,6 @@ ifdef CONFIG_KSU_TRACEPOINT_HOOK
     kernelsu-objs += manager/pkg_observer.o
   endif
 
-  kernelsu-objs += infra/symbol_resolver.o
   kernelsu-objs += hook/lsm_hook_magic.o
   kernelsu-objs += hook/syscall_hook_manager.o
   kernelsu-objs += hook/syscall_event_bridge.o

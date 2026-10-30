@@ -17,11 +17,7 @@
 // 2: allowlist v4 root profile flags
 // 3: scoped su-session driver fd
 // 4: add KSU_GET_INFO_FLAG_BUNDLED
-// 5: add EVENT_SERVICES with a start/skip result
-// 6: add KSU_IOCTL_LOOKUP_SYMBOLS and KSU_GET_INFO_FLAG_PREINIT
-// Managers compare this against their own managerUAPIVersion and refuse to
-// talk to a kernel that reports an older one.
-static const __u32 KERNEL_SU_UAPI_VERSION = 6;
+static const __u32 KERNEL_SU_UAPI_VERSION = 4;
 
 /* Magic numbers for reboot hook to install fd */
 DEFINE_KSU_UAPI_CONST(__u32, KSU_INSTALL_MAGIC1, 0xDEADBEEF)
@@ -34,14 +30,12 @@ struct ksu_become_daemon_cmd {
 DEFINE_KSU_UAPI_CONST(__u32, EVENT_POST_FS_DATA, 1)
 DEFINE_KSU_UAPI_CONST(__u32, EVENT_BOOT_COMPLETED, 2)
 DEFINE_KSU_UAPI_CONST(__u32, EVENT_MODULE_MOUNTED, 3)
-DEFINE_KSU_UAPI_CONST(__u32, EVENT_SERVICES, 4)
 
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_LKM, (1U << 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_MANAGER, (1U << 1))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_LATE_LOAD, (1U << 2))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_PR_BUILD, (1U << 3))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_BUNDLED, (1U << 4))
-DEFINE_KSU_UAPI_CONST(__u32, KSU_GET_INFO_FLAG_PREINIT, (1U << 5))
 
 struct ksu_get_info_cmd {
     __u32 version; /* Output: KERNEL_SU_VERSION */
@@ -50,7 +44,6 @@ struct ksu_get_info_cmd {
     __u32 uapi_version; /* Output: KERNEL_SU_UAPI_VERSION */
 };
 
-/* Pre-4-byte-uapi_version layout, still used by older managers */
 struct ksu_get_info_legacy_cmd {
     __u32 version; /* Output: KERNEL_SU_VERSION */
     __u32 flags; /* Output: KSU_GET_INFO_FLAG_* bits */
@@ -182,13 +175,10 @@ struct ksu_hook_type_cmd {
     char hook_type[32]; // Output: hook type string
 };
 
-struct ksu_enable_kpm_cmd {
-    __u8 enabled; // Output: true if KPM is enabled
-};
-
 DEFINE_KSU_UAPI_CONST(__u8, DYNAMIC_MANAGER_OP_SET, 0)
 DEFINE_KSU_UAPI_CONST(__u8, DYNAMIC_MANAGER_OP_GET, 1)
 DEFINE_KSU_UAPI_CONST(__u8, DYNAMIC_MANAGER_OP_WIPE, 2)
+DEFINE_KSU_UAPI_CONST(__u8, DYNAMIC_MANAGER_OP_SET_SYNCHRONOUS, 3)
 
 struct ksu_dynamic_manager_cmd {
     __u8 operation;
@@ -207,21 +197,6 @@ struct ksu_get_managers_cmd {
     struct ksu_manager_entry managers[]; // Output: Array of active manager
 } __attribute__((packed));
 
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_LOAD, 1)
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_UNLOAD, 2)
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_NUM, 3)
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_LIST, 4)
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_INFO, 5)
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_CONTROL, 6)
-DEFINE_KSU_UAPI_CONST(__u8, KSU_KPM_VERSION, 7)
-
-struct ksu_kpm_cmd {
-    __u8 __user control_code;
-    __aligned_u64 __user arg1;
-    __aligned_u64 __user arg2;
-    __aligned_u64 __user result_code;
-} __attribute__((packed));
-
 DEFINE_KSU_UAPI_CONST(__u8, KERNEL_PATCH_NOT_FOUND, 0)
 DEFINE_KSU_UAPI_CONST(__u8, KERNEL_PATCH_ORIGINAL, 1)
 DEFINE_KSU_UAPI_CONST(__u8, KERNEL_PATCH_KPN, 2)
@@ -234,6 +209,7 @@ struct ksu_get_kernel_patch_implement {
 /* IOCTL command definitions */
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GRANT_ROOT, _IOC(_IOC_NONE, 'K', 1, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_INFO, _IOR('K', 2, struct ksu_get_info_cmd))
+// deprecated
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_INFO_LEGACY, _IOC(_IOC_READ, 'K', 2, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_REPORT_EVENT, _IOC(_IOC_WRITE, 'K', 3, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_SET_SEPOLICY, _IOC(_IOC_READ | _IOC_WRITE, 'K', 4, 0))
@@ -257,16 +233,16 @@ DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_NUKE_EXT4_SYSFS, _IOC(_IOC_WRITE, 'K', 17
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_MANAGE_TRY_UMOUNT, _IOC(_IOC_WRITE, 'K', 18, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_SET_INIT_PGRP, _IO('K', 19))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_SULOG_FD, _IOW('K', 20, struct ksu_get_sulog_fd_cmd))
+DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT, _IO('K', 21))
 
 // Downstream add IOCTL command definitions
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_FULL_VERSION, _IOC(_IOC_READ, 'K', 100, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_HOOK_TYPE, _IOC(_IOC_READ, 'K', 101, 0))
-DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_ENABLE_KPM, _IOC(_IOC_READ, 'K', 102, 0))
+// 102 = ENABLE_KPM (KernelPatch Module),deprecated
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_DYNAMIC_MANAGER, _IOC(_IOC_READ | _IOC_WRITE, 'K', 103, 0))
 // 104 = old get_managers, deprecated
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_MANAGERS, _IOC(_IOC_READ | _IOC_WRITE, 'K', 105, 0))
 DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_GET_KERNEL_PATCH_IMPLEMENT, _IOC(_IOC_READ, 'K', 106, 0))
-DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_KPM, _IOC(_IOC_READ | _IOC_WRITE, 'K', 200, 0))
-
+// 200 = MANAGE_KPM,deprecated
 #undef DEFINE_KSU_UAPI_CONST
 #endif
