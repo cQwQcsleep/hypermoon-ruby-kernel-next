@@ -155,6 +155,16 @@ back up modules, remove the old manager and `/data/adb/ksu`, then flash.
 Every release asset is checked with `unzip -t`, `gzip -t` and a SHA-256
 against the build tree; checksums are published with the release.
 
+**About recovery (OrangeFox).** `ruby` is an A-only device: OrangeFox
+installs its recovery ramdisk *into the boot partition*. Flashing any kernel
+therefore replaces the recovery too, and a kernel that does not boot also
+leaves you with no OrangeFox to fall back to. Keep a `recovery.img` on hand
+and restore it with `fastboot flash recovery` / `fastboot boot recovery.img`
+(or reflash the OrangeFox zip) after testing a kernel. AnyKernel3 also saves
+the repacked image to `/sdcard/Download/hypermoon-ruby-boot.img`, so
+`fastboot flash boot` with that file (or with your stock boot backup) restores
+the device even when recovery is gone.
+
 The kernel targets HyperOS / MIUI firmware for `ruby`. Flashing a kernel
 always carries risk; keep a known-good boot image available.
 
