@@ -407,11 +407,11 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
 #endif
 
 /*
- * These post-stat hooks only exist in the ReSukiSU driver (they feed its ksud
- * detection); other manager drivers have no such symbol, so only reference it
- * for that build.
+ * These post-stat hooks only exist in the ReSukiSU driver's manual-hook
+ * integration (they feed its ksud detection); the SUSFS-inline build and the
+ * other manager drivers have no such symbols.
  */
-#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
+#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU) && defined(CONFIG_KSU_MANUAL_HOOK)
 extern void ksu_handle_newfstat_ret(unsigned int *fd, struct stat __user **statbuf_ptr);
 #endif
 SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
@@ -421,7 +421,7 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
 
 	if (!error)
 		error = cp_new_stat(&stat, statbuf);
-#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
+#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU) && defined(CONFIG_KSU_MANUAL_HOOK)
 	if (!error)
 		ksu_handle_newfstat_ret(&fd, &statbuf);
 #endif
@@ -544,7 +544,7 @@ SYSCALL_DEFINE2(lstat64, const char __user *, filename,
 	return error;
 }
 
-#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
+#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU) && defined(CONFIG_KSU_MANUAL_HOOK)
 extern void ksu_handle_fstat64_ret(unsigned long *fd, struct stat64 __user **statbuf_ptr);
 #endif
 SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)
@@ -554,7 +554,7 @@ SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)
 
 	if (!error)
 		error = cp_new_stat64(&stat, statbuf);
-#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
+#if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU) && defined(CONFIG_KSU_MANUAL_HOOK)
 	if (!error)
 		ksu_handle_fstat64_ret(&fd, &statbuf);
 #endif
