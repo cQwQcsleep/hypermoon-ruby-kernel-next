@@ -1,5 +1,22 @@
 # HyperMoon Ruby Next
 
+> ## ⚠️ 危险警告 / DANGER
+>
+> **本仓库是危险、实验性的内核。** 这些代码未经完整实机验证，刷入后可能出现：
+> 无法开机、boot 分区损坏、无法进入 OrangeFox/恢复模式、系统反复重启、
+> 数据丢失、变砖，以及由此带来的维修成本。
+>
+> - 刷机前务必备份 boot 分区与所有重要数据，并确认你手上有可用的
+>   fastboot/救砖方案（例如已保存的原厂 boot 镜像）。
+> - 每验证一个变体之前不要批量刷入；优先刷与当前管理器完全匹配的版本。
+> - 因使用本仓库导致的任何设备损坏、数据丢失或不可逆后果，由使用者自行承担。
+>
+> **This repository contains dangerous, experimental kernels.** Flashing may
+> brick the device, corrupt the boot partition, leave you unable to boot or to
+> enter OrangeFox/recovery, cause boot loops, or destroy data. Back up the boot
+> partition and your data, keep a working fastboot/restore path, and use at
+> your own risk.
+
 Third-party Linux 4.19 kernel for the Redmi Note 12 Pro 5G / Pro+ 5G
 (`ruby`, MediaTek MT6877 / Dimensity 1080).
 
@@ -39,13 +56,13 @@ numbers are rewritten:
 
 | variant | manager | driver tree | notes |
 | --- | --- | --- | --- |
-| `vanilla` | none (no root driver) | - | |
+| `ksu-resukisu` (alias `ksu`) | ReSukiSU v4.2.0-rc3 | ReSukiSU v4.2.0-rc3 | manual hook, boot-verified |
 | `ksu-official` | KernelSU v3.3.1 | tiann/KernelSU v3.3.1 | 4.19 backports |
 | `ksu-next` | KernelSU-Next v3.4.2 | KernelSU-Next v3.4.2 | 4.19 backports |
-| `ksu-sukisu` | SukiSU-Ultra v4.2.1-r2 | SukiSU-Ultra v4.2.1-r2 | 4.19 backports |
-| `ksu-resukisu` (alias `ksu`) | ReSukiSU v4.2.0-rc3 | ReSukiSU v4.2.0-rc3 | SUSFS inline |
-| `ksu-mksu` | MKSU v9.9.9 | 5ec1cff/KernelSU v9.9.9 | 4.19 backports |
-| `ksu-rksu` | RKSU v3.2.2-10-legacy | rsuntk/KernelSU v3.2.2-10-legacy | native legacy kernel |
+
+Only these three are built while boot behaviour is verified. The SukiSU-Ultra,
+MKSU and RKSU driver trees are vendored but not built until the three above
+are confirmed to boot.
 
 The 5.10-era drivers need a Linux 4.19 compatibility layer to build here:
 `include/linux/pgtable.h`, `include/linux/minmax.h` and
@@ -60,11 +77,11 @@ ReSukiSU 4.19-compatible implementation.
 All KSU variants keep `/proc/config.gz` (system_server needs it) with the
 KSU/SUSFS lines filtered out, `CONFIG_KALLSYMS_ALL` as HyperMoon ships it
 with symbol hiding done by name filtering, and dmesg restricted to
-privileged processes. `ksu-resukisu` also enables SUSFS: suspicious path,
-kstat and mmap hiding, uname spoofing, cmdline spoofing, open redirect,
-KSU/SUSFS symbol hiding and AVC log spoofing (SUSFS logging is disabled,
-`SUS_MOUNT` stays off like HyperMoon). The other variants rely on their own
-driver's hiding features.
+privileged processes. `ksu-resukisu` currently uses the manual-hook
+integration and keeps SUSFS **disabled** (the SUSFS-inline build did not
+boot); the SUSFS options stay in the config file so only
+`CONFIG_KSU_SUSFS=y` is needed once it is verified separately. The
+official and Next variants rely on their own driver's hiding features.
 
 - Additional anti-detection hardening aimed at Duck Detector style
   probes: the reboot supercall only installs the driver fd for root,
@@ -78,13 +95,12 @@ driver's hiding features.
   `xposed_data`, `msd_*`, ...) with `EINVAL` for unprivileged callers.
 
 Each variant uses the manager's own manager-signature table from its driver
-tree, so the matching manager APK (official v3.3.1, Next v3.4.2, SukiSU-Ultra
-v4.2.1-r2, ReSukiSU v4.2.0-rc3, MKSU v9.9.9 or RKSU v3.2.2-10-legacy) is the
-one the kernel expects — no cross-manager signature faking. The ReSukiSU
-variant keeps its multi-manager signature list plus dynamically registered
-manager signatures, and its version string is reduced to the bare version
-code. KOWSU (`KOWX712`) was dropped because the project publishes no
-releases.
+tree, so the matching manager APK (ReSukiSU v4.2.0-rc3, KernelSU v3.3.1 or
+KernelSU-Next v3.4.2) is the one the kernel expects — no cross-manager
+signature faking. The ReSukiSU variant also keeps its multi-manager
+signature list plus dynamically registered manager signatures, and its
+version string is reduced to the bare version code. KOWSU (`KOWX712`) was
+dropped because the project publishes no releases.
 
 ## Build
 
@@ -95,11 +111,8 @@ binutils and the ARM 32-bit cross compiler for the compat vDSO.
 sudo apt-get install -y bc bison flex cpio libelf-dev libssl-dev zip \
   clang-17 lld-17 llvm-17 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
-LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh vanilla
-bash scripts/package_anykernel.sh vanilla
-
 # pick the variant matching the manager you will install
-for v in ksu-official ksu-next ksu-sukisu ksu-resukisu ksu-mksu ksu-rksu; do
+for v in ksu-resukisu ksu-official ksu-next; do
   LLVM_DIR=/usr/lib/llvm-17 JOBS="$(nproc)" bash scripts/build_kernel.sh "$v"
   bash scripts/package_anykernel.sh "$v"
 done
@@ -108,8 +121,9 @@ done
 Kernels are written to `out-<variant>/`; flashable AnyKernel3 zips are
 written to `dist/`.
 
-GitHub Actions builds all variants on every push and uploads one artifact
-per variant (`hypermoon-ruby-vanilla`, `hypermoon-ruby-ksu-official`, ...).
+GitHub Actions builds these three variants on every push and uploads one
+artifact per variant; pushing a `v*` tag turns them into a release with
+`SHA256SUMS`.
 
 ## Flash
 
