@@ -3,6 +3,7 @@ name: build-kernel
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -71,3 +72,31 @@ jobs:
             dist/*.zip
             out-${{ matrix.variant }}/System.map
           if-no-files-found: error
+
+  release:
+    # Push a tag (v*) to turn the artifacts of that build into a release.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Checksums
+        run: |
+          cd artifacts
+          find . -name '*.zip' -exec sha256sum {} \; | sort -k2 > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.zip
+            artifacts/SHA256SUMS
+          generate_release_notes: true
+
