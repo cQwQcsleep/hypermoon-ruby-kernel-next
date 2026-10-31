@@ -135,7 +135,11 @@ int __init kernelsu_init(void)
     }
 
     ksu_init_symbol_resolver();
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+    // 4.19: the dispatcher writes the read-only syscall table, which MTK
+    // rejects; fs/exec.c and kernel/sys.c call the manual hooks instead.
     ksu_syscall_hook_init();
+#endif
 
     // Block modules early, before vendor modules are loaded in second stage.
     ksu_module_blacklist_init();

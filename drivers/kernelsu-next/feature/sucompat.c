@@ -271,6 +271,51 @@ long ksu_handle_execveat_sucompat(const char __user **filename_user, int orig_nr
 }
 
 // sucompat: permitted process can execute 'su' to gain root access.
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
+/*
+ * Linux 4.19 manual-hook integration.
+ *
+ * This tree cannot rewrite sys_call_table: the kernel image is block-mapped
+ * and MTK's protection layer rejects the fixmap poke of the read-only table,
+ * so the tracepoint dispatcher is never installed (core/init.c skips
+ * ksu_syscall_hook_init() below 5.0).  Handle "su" here instead: when an
+ * allowlisted process execs the su path, apply the root profile and rewrite
+ * the resolved filename to ksud (or sh when ksud is missing), then let the
+ * normal exec path continue.
+ */
+int ksu_handle_execve_manual(struct filename *filename)
+{
+    struct path kpath;
+    int ret;
+
+    if (unlikely(!filename) || IS_ERR(filename) || !filename->name)
+        return -EINVAL;
+    if (unlikely(!ksu_su_compat_enabled))
+        return -EINVAL;
+    if (!ksu_is_allow_uid_for_current(current_uid().val))
+        return -EINVAL;
+    if (likely(memcmp(filename->name, su_path, sizeof(su_path))))
+        return -EINVAL;
+
+    pr_info("manual sucompat: su found (pid %d)\n", current->pid);
+
+    ret = escape_with_root_profile();
+    if (ret)
+        pr_err("escape_with_root_profile failed: %d\n", ret);
+
+    if (kern_path(KSUD_PATH, LOOKUP_FOLLOW, &kpath)) {
+        pr_info("manual sucompat: ksud not found, fallback to sh\n");
+        memcpy((char *)filename->name, SH_PATH, sizeof(SH_PATH));
+    } else {
+        path_put(&kpath);
+        memcpy((char *)filename->name, KSUD_PATH, sizeof(KSUD_PATH));
+    }
+
+    return 0;
+}
+#endif /* LINUX_VERSION_CODE < 5.0 */
+
 void __init ksu_sucompat_init()
 {
 	if (ksu_register_feature_handler(&su_compat_handler)) {

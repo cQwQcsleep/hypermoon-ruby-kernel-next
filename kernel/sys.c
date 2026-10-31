@@ -641,6 +641,10 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
  */
 #if defined(CONFIG_KSU) && defined(CONFIG_KSU_DRIVER_RESUKISU)
 extern int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid);
+#elif defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_OFFICIAL) || \
+	defined(CONFIG_KSU_DRIVER_NEXT) || defined(CONFIG_KSU_DRIVER_SUKISU))
+/* 4.19 manual hook: these drivers cannot patch sys_call_table on this tree. */
+extern int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid);
 #endif
 
 long __sys_setresuid(uid_t ruid, uid_t euid, uid_t suid)
@@ -717,12 +721,18 @@ error:
 // #endif
 SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
 {
-// #ifdef CONFIG_KSU_SUSFS
-// 	if (ksu_handle_setresuid(ruid, euid, suid)) {
-// 		pr_info("Something wrong with ksu_handle_setresuid()\n");
-// 	}
-// #endif
+#if defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_OFFICIAL) || \
+	defined(CONFIG_KSU_DRIVER_NEXT) || defined(CONFIG_KSU_DRIVER_SUKISU))
+	uid_t ksu_old_uid = from_kuid_munged(current_user_ns(), current_uid());
+	long ksu_ret = __sys_setresuid(ruid, euid, suid);
+
+	if (!ksu_ret)
+		ksu_handle_setresuid(ksu_old_uid,
+			from_kuid_munged(current_user_ns(), current_uid()));
+	return ksu_ret;
+#else
 	return __sys_setresuid(ruid, euid, suid);
+#endif
 }
 
 SYSCALL_DEFINE3(getresuid, uid_t __user *, ruidp, uid_t __user *, euidp, uid_t __user *, suidp)

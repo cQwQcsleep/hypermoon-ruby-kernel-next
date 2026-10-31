@@ -1737,6 +1737,11 @@ static int exec_binprm(struct linux_binprm *bprm)
 extern bool ksu_su_compat_enabled __read_mostly;
 extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
 			void *envp, int *flags);
+#elif defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_OFFICIAL) || \
+	defined(CONFIG_KSU_DRIVER_NEXT) || defined(CONFIG_KSU_DRIVER_SUKISU))
+/* 4.19 manual hook: rewrite the resolved su filename to ksud instead of
+ * patching the read-only syscall table. */
+extern int ksu_handle_execve_manual(struct filename *filename);
 #endif
 
 static int __do_execve_file(int fd, struct filename *filename,
@@ -1757,7 +1762,12 @@ static int __do_execve_file(int fd, struct filename *filename,
 	}
 
 	ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
-
+#elif defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_OFFICIAL) || \
+	defined(CONFIG_KSU_DRIVER_NEXT) || defined(CONFIG_KSU_DRIVER_SUKISU))
+	ksu_handle_execve_manual(filename);
+#endif
+#if defined(CONFIG_KSU) && (defined(CONFIG_KSU_DRIVER_RESUKISU) || \
+	defined(CONFIG_KSU_DRIVER_RKSU))
 orig_flow:
 #endif
 	/*

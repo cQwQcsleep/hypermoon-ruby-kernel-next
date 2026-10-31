@@ -150,7 +150,11 @@ int __init kernelsu_init(void)
         ksu_spoof_version(spoof_release, spoof_version);
     }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+    // 4.19: the dispatcher writes the read-only syscall table, which MTK
+    // rejects; fs/exec.c and kernel/sys.c call the manual hooks instead.
     ksu_syscall_hook_init();
+#endif
 
     ksu_feature_init();
     ksu_sulog_init();

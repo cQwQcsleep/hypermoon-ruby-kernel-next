@@ -71,6 +71,18 @@ Only these three are built while boot behaviour is verified. The SukiSU-Ultra,
 MKSU and RKSU driver trees are vendored but not built until the three above
 are confirmed to boot.
 
+On this 4.19 tree the official, Next and SukiSU drivers cannot install their
+syscall-table dispatcher: the kernel image is block-mapped and MTK's
+protection layer rejects the fixmap write into the read-only table, so the
+manager only sees "not installed" (and, before the read-back guard, a failed
+patch made init die). Those three variants therefore use **manual hooks**:
+`core/init.c` skips `ksu_syscall_hook_init()` below 5.0 and the kernel calls
+`ksu_handle_execve_manual()` from `fs/exec.c` (rewrites the resolved `su`
+filename to ksud with the root profile applied) and the two-argument
+`ksu_handle_setresuid()` from `kernel/sys.c`. No syscall table is touched.
+`ksu-resukisu` keeps the driver's own manual-hook integration and is the
+variant verified to boot and work on device.
+
 The 5.10-era drivers need a Linux 4.19 compatibility layer to build here:
 `include/linux/pgtable.h`, `include/linux/minmax.h` and
 `include/uapi/linux/mount.h` forward the newer header names to their 4.19
