@@ -121,20 +121,22 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
     int magic2 = (int)PT_REGS_PARM2(real_regs);
 
     if (magic1 == KSU_INSTALL_MAGIC1 && magic2 == KSU_INSTALL_MAGIC2) {
-        struct ksu_install_fd_tw *tw;
         unsigned long arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
+        int fd;
 
-        tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
-        if (!tw)
-            return 0;
-
-        tw->outp = (int __user *)arg4;
-        tw->cb.func = ksu_install_fd_tw_func;
-
-        if (task_work_add(current, &tw->cb, TWA_RESUME)) {
-            kfree(tw);
-            pr_warn("install fd add task_work failed\n");
+        /*
+         * Install synchronously, like the ReSukiSU driver does.  The
+         * deferred task_work install never reached userspace on this 4.19
+         * tree, so the manager could not read GET_INFO and reported the
+         * kernel as "not installed".
+         */
+        fd = ksu_install_fd();
+        pr_info("[%d] install ksu fd: %d\n", current->pid, fd);
+        if (copy_to_user((int __user *)arg4, &fd, sizeof(fd))) {
+            pr_err("install ksu fd reply err\n");
+            ksu_close_fd(fd);
         }
+
     }
 
     return 0;
