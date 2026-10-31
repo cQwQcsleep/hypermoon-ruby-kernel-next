@@ -193,7 +193,8 @@ static int ksu_patch_text_nosync(void *dst, void *src, size_t len, int flags)
     }
 
 err:
-    pr_debug("patch result=%d\n", ret);
+    if (ret)
+        pr_err("patch result=%d\n", ret);
     return ret;
 }
 
