@@ -32,6 +32,14 @@ unsigned long phys_from_virt(unsigned long addr, int *err)
      * table patch failed on ruby.  kimage_voffset translates image
      * addresses directly, independent of the mapping layout.
      */
+    extern char _text[], _end[];
+
+    /* Only image addresses have a valid kimage_voffset translation. */
+    if (addr < (unsigned long)_text || addr >= (unsigned long)_end) {
+        *err = -ENOENT;
+        return 0;
+    }
+
     *err = 0;
     return __pa_symbol((void *)addr);
 #else
