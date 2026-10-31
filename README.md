@@ -59,6 +59,7 @@ numbers are rewritten:
 | `ksu-resukisu` (alias `ksu`) | ReSukiSU v4.2.0-rc3 (manager `35171`) | ReSukiSU/BakaSU v4.2.0-rc3 tag (`239e1e88`, UAPI 4) | manual hook, boot-verified |
 | `ksu-official` | KernelSU v3.3.1 (manager `32680`) | tiann/KernelSU v3.3.1 (UAPI 5) | 4.19 backports |
 | `ksu-next` | KernelSU-Next v3.4.2 (manager `33355`) | KernelSU-Next v3.4.2 (UAPI 5) | 4.19 backports |
+| `ksu-sukisu` | SukiSU-Ultra v4.2.1-r2 (manager `41068`) | SukiSU-Ultra v4.2.1-r2 (UAPI 6) | 4.19 backports |
 
 The ReSukiSU driver is the exact release tag the manager APK was built from:
 it reports kernel version `35171` and UAPI 4, so the manager's

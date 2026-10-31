@@ -12,6 +12,7 @@
 #include "linux/uaccess.h"
 #include "linux/stop_machine.h"
 #include "asm/cacheflush.h"
+#include "asm/memory.h"
 #include "asm-generic/fixmap.h"
 
 // https://github.com/fuqiuluo/ovo/blob/f7da411458e87d32438dc14fce5a3313ed0c967e/ovo/mmuhack.c#L21
@@ -22,6 +23,27 @@
 // since physical address 0 is a valid address.
 unsigned long phys_from_virt(unsigned long addr, int *err)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
+    /*
+     * Every caller patches a symbol inside the kernel image
+     * (sys_call_table, the LSM hook pointers and the selinuxfs write_op
+     * table).  On 4.19 (39-bit VA, 3 level tables, KASLR aligned to 2 MB)
+     * the image is block-mapped and walking init_mm through the generic
+     * 5-level API does not find those entries, which is why the syscall
+     * table patch failed on ruby.  kimage_voffset translates image
+     * addresses directly, independent of the mapping layout.
+     */
+    extern char _text[], _end[];
+
+    /* Only image addresses have a valid kimage_voffset translation. */
+    if (addr < (unsigned long)_text || addr >= (unsigned long)_end) {
+        *err = -ENOENT;
+        return 0;
+    }
+
+    *err = 0;
+    return __pa_symbol((void *)addr);
+#else
     struct mm_struct *mm = &init_mm;
     pgd_t *pgd;
     p4d_t *p4d;
@@ -81,6 +103,7 @@ unsigned long phys_from_virt(unsigned long addr, int *err)
 fail:
     *err = -ENOENT;
     return 0;
+#endif /* LINUX_VERSION_CODE >= 5.0 */
 }
 
 // This function appears in 5.14:
@@ -142,7 +165,7 @@ static int ksu_patch_text_nosync(void *dst, void *src, size_t len, int flags)
         pr_err("failed to find phy addr for patch dst addr 0x%lx\n", p);
         goto err;
     }
-    pr_debug("phy addr for patch 0x%lx: 0x%lx\n", p, phy);
+    pr_info("phy addr for patch 0x%lx: 0x%lx\n", p, phy);
 
     void *map = set_fixmap_offset(FIX_TEXT_POKE0, phy);
     pr_debug("fixmap addr for patch 0x%lx: 0x%lx\n", p, (unsigned long)map);

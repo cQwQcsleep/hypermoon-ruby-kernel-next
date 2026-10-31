@@ -17,12 +17,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Temporarily limited to the three variants under test.  The other
-        # managers (SukiSU, MKSU, RKSU) are not built until these boot.
+        # ReSukiSU (manual hook, verified), KernelSU, KernelSU-Next and
+        # SukiSU-Ultra.  MKSU/RKSU driver trees are vendored but not built.
         variant:
           - ksu-resukisu
           - ksu-official
           - ksu-next
+          - ksu-sukisu
     name: build-${{ matrix.variant }}
     steps:
       - name: Checkout
